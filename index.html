@@ -422,6 +422,83 @@ nav {
 }
 .contact-form button:hover { opacity: 0.9; }
 
+/* QUICK LOOKUP (간편 조회) */
+.lookup { background: var(--hero-bg); color: var(--hero-fg); }
+.lookup .section-label { color: var(--accent); }
+.lookup .section-title { color: #FFFFFF; }
+.lookup .section-desc { color: #94A3B8; }
+.lookup-box {
+  max-width: 640px; margin: 0 auto;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 28px;
+}
+.lookup-inputs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 540px) { .lookup-inputs { grid-template-columns: 1fr; } }
+.lookup-inputs input {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 12px 14px;
+  color: #FFFFFF; font-size: 14px; outline: none;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.lookup-inputs input:focus { border-color: var(--accent-light); }
+.lookup-inputs input::placeholder { color: #64748B; }
+.lookup-addr {
+  grid-column: 1 / -1;
+  font-family: 'Noto Sans KR', sans-serif !important;
+}
+.lookup-actions {
+  display: flex; gap: 10px; margin-top: 14px;
+  flex-wrap: wrap;
+}
+.lookup-actions button {
+  padding: 12px 24px; border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s; font-family: 'Noto Sans KR', sans-serif;
+}
+.btn-lookup {
+  background: var(--accent); color: #FFF;
+  flex: 1;
+}
+.btn-lookup:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-demo {
+  background: rgba(255,255,255,0.08); color: #CBD5E1;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+}
+.btn-demo:hover { background: rgba(255,255,255,0.12); }
+.lookup-status {
+  margin-top: 12px; font-size: 13px; color: #94A3B8;
+  min-height: 20px;
+}
+.lookup-chart-wrap {
+  margin-top: 24px; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 20px;
+  display: none;
+}
+.lookup-chart-wrap.active { display: block; }
+.lookup-chart-title {
+  font-size: 14px; font-weight: 600; color: #CBD5E1;
+  margin-bottom: 12px;
+}
+.lookup-chart-meta {
+  font-size: 12px; color: #64748B; margin-top: 10px;
+  line-height: 1.6;
+}
+.lookup-legend {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 12px; color: #94A3B8;
+}
+.lookup-legend span::before {
+  content: ''; display: inline-block;
+  width: 10px; height: 10px; border-radius: 2px;
+  margin-right: 4px; vertical-align: middle;
+}
+.legend-green::before { background: #4CAF50; }
+.legend-yellow::before { background: #FDD835; }
+.legend-brown::before { background: #A1887F; }
+
 /* PARENT COMPANY BANNER */
 .parent-banner {
   background: linear-gradient(135deg, #1A2E1A 0%, #223A22 100%);
@@ -490,6 +567,7 @@ footer {
     <ul class="nav-links">
       <li><a href="#services" class="hide-mobile">서비스</a></li>
       <li><a href="#howit" class="hide-mobile">작동 원리</a></li>
+      <li><a href="#lookup" class="hide-mobile">간편 조회</a></li>
       <li><a href="#pricing" class="hide-mobile">요금</a></li>
       <li><a href="#faq" class="hide-mobile">FAQ</a></li>
       <li><a href="#contact" class="nav-cta">문의하기</a></li>
@@ -684,6 +762,37 @@ footer {
           <li>농지 전수조사 시행지침 기준에 따른 용어 사용</li>
           <li>의뢰인 진술과 관측 데이터 대조표</li>
         </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK LOOKUP (간편 조회) -->
+<section class="section lookup" id="lookup">
+  <div class="inner">
+    <div class="section-label">Quick Lookup</div>
+    <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
+    <p class="section-desc">좌표를 입력하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-inputs">
+        <input type="text" id="luAddr" class="lookup-addr" placeholder="지번 주소 (예: 경기도 광주시 오포읍 능평리 207-1)" disabled title="지번 조회는 준비 중입니다">
+        <input type="text" id="luLat" placeholder="위도 (예: 37.3456)">
+        <input type="text" id="luLon" placeholder="경도 (예: 127.1234)">
+      </div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="luStatus"></div>
+      <div class="lookup-chart-wrap" id="luChartWrap">
+        <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
+        <canvas id="luChart" height="260"></canvas>
+        <div class="lookup-legend">
+          <span class="legend-green">경작 (NDVI 0.4+)</span>
+          <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
+          <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="luMeta"></div>
       </div>
     </div>
   </div>
@@ -949,6 +1058,196 @@ if (inquiryForm) {
       btn.textContent = '문의 보내기';
     });
   });
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+var luChart = null;
+var PC_API = 'https://planetarycomputer.microsoft.com';
+
+var DEMO_DATA = {
+  label: '경기도 광주시 오포읍 능평리 207-1 (데모)',
+  lat: 37.3310, lon: 127.1365,
+  years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  ndvi_summer: [0.72, 0.68, 0.61, 0.54, 0.42, 0.28, 0.23, 0.65, 0.70, 0.75],
+  ndvi_spring: [0.35, 0.32, 0.28, 0.22, 0.18, 0.12, 0.10, 0.30, 0.33, 0.38],
+  scenes: 87,
+  note: '2020~2021년 NDVI 하락은 휴경/맨땅 상태를 시사합니다. 2022년 이후 경작 재개 패턴이 관측됩니다.'
+};
+
+function renderChart(data) {
+  var wrap = document.getElementById('luChartWrap');
+  wrap.classList.add('active');
+  document.getElementById('luChartTitle').textContent = data.label + ' — NDVI 시계열';
+  if (luChart) luChart.destroy();
+  var ctx = document.getElementById('luChart').getContext('2d');
+  luChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.years.map(String),
+      datasets: [
+        {
+          label: '여름 최고 NDVI',
+          data: data.ndvi_summer,
+          backgroundColor: data.ndvi_summer.map(function(v) {
+            return v >= 0.4 ? 'rgba(76,175,80,0.8)' : v >= 0.2 ? 'rgba(253,216,53,0.8)' : 'rgba(161,136,127,0.8)';
+          }),
+          borderColor: data.ndvi_summer.map(function(v) {
+            return v >= 0.4 ? '#388E3C' : v >= 0.2 ? '#F9A825' : '#8D6E63';
+          }),
+          borderWidth: 1,
+          borderRadius: 4,
+          order: 1
+        },
+        {
+          label: '봄 최저 NDVI',
+          data: data.ndvi_spring,
+          type: 'line',
+          borderColor: '#90CAF9',
+          backgroundColor: 'rgba(144,202,249,0.1)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#90CAF9',
+          tension: 0.3,
+          fill: true,
+          order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94A3B8', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(ctx) {
+              var v = ctx.raw;
+              if (v >= 0.4) return '판정: 경작 중';
+              if (v >= 0.2) return '판정: 약한 식생/전환기';
+              return '판정: 맨땅/휴경';
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true, max: 1,
+          title: { display: true, text: 'NDVI', color: '#94A3B8' },
+          ticks: { color: '#64748B' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        x: {
+          ticks: { color: '#94A3B8' },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+  document.getElementById('luMeta').innerHTML =
+    '위치: ' + data.lat.toFixed(4) + ', ' + data.lon.toFixed(4) +
+    ' | 분석 장면: ' + data.scenes + '개 | 데이터: Copernicus Sentinel-2' +
+    (data.note ? '<br>' + data.note : '');
+}
+
+function runDemo() {
+  document.getElementById('luLat').value = DEMO_DATA.lat;
+  document.getElementById('luLon').value = DEMO_DATA.lon;
+  document.getElementById('luStatus').textContent = '샘플 데이터를 표시합니다 (경기도 광주시 오포읍)';
+  renderChart(DEMO_DATA);
+}
+
+async function runLookup() {
+  var lat = parseFloat(document.getElementById('luLat').value);
+  var lon = parseFloat(document.getElementById('luLon').value);
+  var status = document.getElementById('luStatus');
+  var btn = document.getElementById('luBtn');
+  if (isNaN(lat) || isNaN(lon) || lat < 33 || lat > 43 || lon < 124 || lon > 132) {
+    status.textContent = '올바른 좌표를 입력하세요 (한국 범위: 위도 33~43, 경도 124~132)';
+    status.style.color = '#EF4444';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '조회 중...';
+  status.style.color = '#94A3B8';
+  status.textContent = 'Planetary Computer에서 Sentinel-2 장면을 검색 중...';
+  try {
+    var searchUrl = PC_API + '/api/stac/v1/search';
+    var body = {
+      collections: ['sentinel-2-l2a'],
+      intersects: { type: 'Point', coordinates: [lon, lat] },
+      datetime: '2017-01-01T00:00:00Z/2099-01-01T00:00:00Z',
+      query: { 'eo:cloud_cover': { lt: 30 } },
+      limit: 250,
+      fields: { include: ['properties.datetime', 'properties.eo:cloud_cover', 'properties.s2:processing_baseline', 'id'] }
+    };
+    var resp = await fetch(searchUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('STAC 검색 실패: ' + resp.status);
+    var result = await resp.json();
+    var items = result.features || [];
+    status.textContent = items.length + '개 장면 발견. NDVI 계산 중 (시간이 소요됩니다)...';
+    var d = 0.0015;
+    var geom = { type: 'Polygon', coordinates: [[[lon-d,lat-d],[lon+d,lat-d],[lon+d,lat+d],[lon-d,lat+d],[lon-d,lat-d]]] };
+    var feat = { type: 'Feature', properties: {}, geometry: geom };
+    var ndviByYear = {};
+    var springByYear = {};
+    var done = 0;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var dt = it.properties.datetime;
+      var y = parseInt(dt.slice(0, 4));
+      var m = parseInt(dt.slice(5, 7));
+      var isSummer = m >= 6 && m <= 9;
+      var isSpring = m >= 3 && m <= 5;
+      if (!isSummer && !isSpring) continue;
+      var baseline = it.properties['s2:processing_baseline'] || '00.00';
+      var expr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
+      try {
+        var statUrl = PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id +
+          '&expression=' + encodeURIComponent(expr) + '&asset_as_band=true';
+        var sr = await fetch(statUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(feat) });
+        if (sr.ok) {
+          var sj = await sr.json();
+          var sv = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
+          if (sv && sv.mean != null) {
+            var ndvi = sv.mean;
+            if (isSummer) {
+              if (!ndviByYear[y] || ndvi > ndviByYear[y]) ndviByYear[y] = ndvi;
+            }
+            if (isSpring) {
+              if (!springByYear[y] || ndvi < springByYear[y]) springByYear[y] = ndvi;
+            }
+          }
+        }
+      } catch (e) {}
+      done++;
+      if (done % 10 === 0) status.textContent = 'NDVI 계산 중... (' + done + '/' + items.length + ')';
+    }
+    var years = Object.keys(ndviByYear).map(Number).sort();
+    if (years.length < 2) throw new Error('유효한 NDVI 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요.');
+    renderChart({
+      label: lat.toFixed(4) + ', ' + lon.toFixed(4),
+      lat: lat, lon: lon,
+      years: years,
+      ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
+      ndvi_spring: years.map(function(y) { return springByYear[y] != null ? Math.round(springByYear[y] * 100) / 100 : null; }),
+      scenes: items.length,
+      note: years.length + '년간 여름(6~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI를 표시합니다.'
+    });
+    status.textContent = '조회 완료: ' + years.length + '년, ' + items.length + '개 장면 분석';
+    status.style.color = '#3CB371';
+  } catch (e) {
+    status.textContent = '조회 실패: ' + e.message + ' — 샘플 보기를 먼저 사용해 보세요.';
+    status.style.color = '#EF4444';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '조회 시작';
+  }
 }
 </script>
 
