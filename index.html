@@ -422,6 +422,25 @@ nav {
 }
 .contact-form button:hover { opacity: 0.9; }
 
+/* PARENT COMPANY BANNER */
+.parent-banner {
+  background: linear-gradient(135deg, #1A2E1A 0%, #223A22 100%);
+  border-top: 1px solid rgba(46,139,87,0.2);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 18px 0; text-align: center; font-size: 13px;
+}
+.parent-banner .inner {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; flex-wrap: wrap;
+}
+.parent-banner .pb-label { color: #94A3B8; letter-spacing: 0.02em; }
+.parent-banner a.pb-link {
+  color: #3CB371; text-decoration: none; font-weight: 600;
+  transition: color 0.2s;
+}
+.parent-banner a.pb-link:hover { color: #5ED595; }
+.parent-banner .pb-arrow { font-size: 11px; margin-left: 2px; }
+
 /* FOOTER */
 footer {
   background: var(--hero-bg); color: #64748B;
@@ -828,6 +847,17 @@ footer {
     </div>
   </div>
 </section>
+
+<!-- PARENT COMPANY BANNER -->
+<div class="parent-banner">
+  <div class="inner">
+    <span class="pb-label">모기업:</span>
+    <a class="pb-link" href="https://jootek.com/folio/1048596" target="_blank" rel="noopener">
+      동산건설주식회사 — 경기 광주 52개 프로젝트 시공 실적
+      <span class="pb-arrow">↗</span>
+    </a>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
