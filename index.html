@@ -817,12 +817,13 @@ footer {
           경기도 광주시 광주역9로 21(역동)
         </div>
       </div>
-      <form class="contact-form" onsubmit="event.preventDefault(); var n=this.elements[0].value,e=this.elements[1].value,a=this.elements[2].value,m=this.elements[3].value; var body='이름: '+n+'%0A이메일: '+e+'%0A대상 지번: '+a+'%0A%0A'+encodeURIComponent(m); window.open('mailto:dscon36@naver.com?subject='+encodeURIComponent('[DS플래닛] 리포트 문의 - '+n)+'&body='+body); alert('메일 클라이언트가 열립니다. 발송을 완료해주세요.');">
-        <input type="text" placeholder="이름 또는 회사명" required>
-        <input type="email" placeholder="이메일 주소" required>
-        <input type="text" placeholder="분석 대상 지번 (예: 경기도 OO시 OO읍 OO리 207-1)">
-        <textarea placeholder="문의 내용 (용도, 필요 시점 등)"></textarea>
-        <button type="submit">문의 보내기</button>
+      <form class="contact-form" id="inquiryForm">
+        <input type="text" id="inqName" placeholder="이름 또는 회사명" required>
+        <input type="email" id="inqEmail" placeholder="이메일 주소" required>
+        <input type="text" id="inqAddress" placeholder="분석 대상 지번 (예: 경기도 OO시 OO읍 OO리 207-1)">
+        <textarea id="inqMessage" placeholder="문의 내용 (용도, 필요 시점 등)"></textarea>
+        <button type="submit" id="inqBtn">문의 보내기</button>
+        <div id="inqStatus" style="font-size:14px;color:#94A3B8;display:none;"></div>
       </form>
     </div>
   </div>
@@ -873,6 +874,52 @@ document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     }
   });
 });
+
+var INQUIRY_URL = '';
+var inquiryForm = document.getElementById('inquiryForm');
+if (inquiryForm) {
+  inquiryForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('inqBtn');
+    var status = document.getElementById('inqStatus');
+    if (!INQUIRY_URL) {
+      var n = document.getElementById('inqName').value;
+      var em = document.getElementById('inqEmail').value;
+      var addr = document.getElementById('inqAddress').value;
+      var msg = document.getElementById('inqMessage').value;
+      var body = '이름: '+n+'%0A이메일: '+em+'%0A대상 지번: '+addr+'%0A%0A'+encodeURIComponent(msg);
+      window.open('mailto:dscon36@naver.com?subject='+encodeURIComponent('[DS플래닛] 리포트 문의 - '+n)+'&body='+body);
+      status.textContent = '메일 클라이언트가 열립니다. 발송을 완료해주세요.';
+      status.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+    fetch(INQUIRY_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('inqName').value,
+        email: document.getElementById('inqEmail').value,
+        address: document.getElementById('inqAddress').value,
+        message: document.getElementById('inqMessage').value
+      })
+    }).then(function() {
+      status.textContent = '문의가 접수되었습니다. 빠른 시일 내 회신드리겠습니다.';
+      status.style.display = 'block';
+      status.style.color = '#3CB371';
+      btn.textContent = '전송 완료';
+      inquiryForm.reset();
+      setTimeout(function() { btn.disabled = false; btn.textContent = '문의 보내기'; }, 3000);
+    }).catch(function() {
+      status.textContent = '전송 중 오류가 발생했습니다. 이메일로 직접 문의해주세요.';
+      status.style.display = 'block';
+      status.style.color = '#EF4444';
+      btn.disabled = false;
+      btn.textContent = '문의 보내기';
+    });
+  });
+}
 </script>
 
 </body>
