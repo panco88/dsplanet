@@ -478,6 +478,8 @@ nav {
   display: none;
 }
 .lookup-chart-wrap.active { display: block; }
+.lookup-chart-canvas { position: relative; height: 260px; }
+@media (max-width: 520px) { .lookup-chart-canvas { height: 220px; } }
 .lookup-chart-title {
   font-size: 14px; font-weight: 600; color: #CBD5E1;
   margin-bottom: 12px;
@@ -786,7 +788,7 @@ footer {
       <div class="lookup-status" id="luStatus"></div>
       <div class="lookup-chart-wrap" id="luChartWrap">
         <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
-        <canvas id="luChart" height="260"></canvas>
+        <div class="lookup-chart-canvas"><canvas id="luChart"></canvas></div>
         <div class="lookup-legend">
           <span class="legend-green">경작 (NDVI 0.4+)</span>
           <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
@@ -1073,7 +1075,7 @@ var DEMO_DATA = {
   ndvi_summer: [0.72, 0.68, 0.61, 0.54, 0.42, 0.28, 0.23, 0.65, 0.70, 0.75],
   ndvi_spring: [0.35, 0.32, 0.28, 0.22, 0.18, 0.12, 0.10, 0.30, 0.33, 0.38],
   scenes: 87,
-  note: '2020~2021년 NDVI 하락은 휴경/맨땅 상태를 시사합니다. 2022년 이후 경작 재개 패턴이 관측됩니다.'
+  note: '2022~2023년 NDVI 하락은 휴경/맨땅 상태를 시사합니다. 2024년 이후 경작 재개 패턴이 관측됩니다.'
 };
 
 function renderChart(data) {
@@ -1173,73 +1175,123 @@ async function runLookup() {
   status.style.color = '#94A3B8';
   status.textContent = 'Planetary Computer에서 Sentinel-2 장면을 검색 중...';
   try {
-    var searchUrl = PC_API + '/api/stac/v1/search';
-    var body = {
-      collections: ['sentinel-2-l2a'],
-      intersects: { type: 'Point', coordinates: [lon, lat] },
-      datetime: '2017-01-01T00:00:00Z/2099-01-01T00:00:00Z',
-      query: { 'eo:cloud_cover': { lt: 30 } },
-      limit: 250,
-      fields: { include: ['properties.datetime', 'properties.eo:cloud_cover', 'properties.s2:processing_baseline', 'id'] }
-    };
-    var resp = await fetch(searchUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!resp.ok) throw new Error('STAC 검색 실패: ' + resp.status);
-    var result = await resp.json();
-    var items = result.features || [];
-    status.textContent = items.length + '개 장면 발견. NDVI 계산 중 (시간이 소요됩니다)...';
-    var d = 0.0015;
+    // 연도·계절(봄 3~5월, 여름 6~9월)마다 구름 적은 순으로 장면을 받아,
+    // NDVI가 2장 나올 때까지만 계산한다. 서버가 끊는 장면은 다시 시도하지 않고 다음 장면으로 넘어간다.
+    var FIRST_YEAR = 2017;
+    var thisYear = new Date().getFullYear();
+    var CANDIDATES = 5;      // 계절당 후보 장면 수 (구름 적은 순)
+    var NEED = 2;            // 계절당 필요한 성공 장면 수
+    var CONCURRENCY = 8;     // 동시에 처리하는 계절 수
+    var TIMEOUT_MS = 16000;  // 요청당 제한 시간 (서버가 약 15초에 끊음)
+    var now = new Date();
+    var seasons = [];
+    for (var yy = thisYear; yy >= FIRST_YEAR; yy--) {
+      var sp = { year: yy, kind: 'spring', from: yy + '-03-01T00:00:00Z', to: yy + '-05-31T23:59:59Z' };
+      var su = { year: yy, kind: 'summer', from: yy + '-06-01T00:00:00Z', to: yy + '-09-30T23:59:59Z' };
+      if (new Date(su.from) <= now) seasons.push(su);
+      if (new Date(sp.from) <= now) seasons.push(sp);
+    }
+
+    async function fetchJson(url, opts, retries) {
+      for (var attempt = 0; attempt <= retries; attempt++) {
+        var ctrl = new AbortController();
+        var timer = setTimeout(function() { ctrl.abort(); }, TIMEOUT_MS);
+        try {
+          var r = await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+          clearTimeout(timer);
+          if (r.ok) return await r.json();
+          if (r.status < 500 && r.status !== 429) throw new Error('HTTP ' + r.status);
+        } catch (err) {
+          clearTimeout(timer);
+          if (attempt === retries) throw err;
+        }
+        if (attempt < retries) await new Promise(function(res) { setTimeout(res, 1500); });
+      }
+      throw new Error('응답 없음');
+    }
+
+    var d = 0.0015;  // 약 300m 사각형 평균
     var geom = { type: 'Polygon', coordinates: [[[lon-d,lat-d],[lon+d,lat-d],[lon+d,lat+d],[lon-d,lat+d],[lon-d,lat-d]]] };
-    var feat = { type: 'Feature', properties: {}, geometry: geom };
+    var feat = JSON.stringify({ type: 'Feature', properties: {}, geometry: geom });
     var ndviByYear = {};
     var springByYear = {};
-    var done = 0;
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i];
-      var dt = it.properties.datetime;
-      var y = parseInt(dt.slice(0, 4));
-      var m = parseInt(dt.slice(5, 7));
-      var isSummer = m >= 6 && m <= 9;
-      var isSpring = m >= 3 && m <= 5;
-      if (!isSummer && !isSpring) continue;
-      var baseline = it.properties['s2:processing_baseline'] || '00.00';
-      var expr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
-      try {
-        var statUrl = PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id +
-          '&expression=' + encodeURIComponent(expr) + '&asset_as_band=true';
-        var sr = await fetch(statUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(feat) });
-        if (sr.ok) {
-          var sj = await sr.json();
-          var sv = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
-          if (sv && sv.mean != null) {
-            var ndvi = sv.mean;
-            if (isSummer) {
-              if (!ndviByYear[y] || ndvi > ndviByYear[y]) ndviByYear[y] = ndvi;
-            }
-            if (isSpring) {
-              if (!springByYear[y] || ndvi < springByYear[y]) springByYear[y] = ndvi;
-            }
-          }
-        }
-      } catch (e) {}
-      done++;
-      if (done % 10 === 0) status.textContent = 'NDVI 계산 중... (' + done + '/' + items.length + ')';
+    var seasonsDone = 0, searchFail = 0, ok = 0, fail = 0;
+
+    function showProgress() {
+      status.textContent = '위성 장면 분석 중... (' + seasonsDone + '/' + seasons.length + '개 계절, ' + FIRST_YEAR + '~' + thisYear + '년)' +
+        (fail ? ' · 서버 지연으로 건너뜀 ' + fail + '건' : '');
     }
-    var years = Object.keys(ndviByYear).map(Number).sort();
-    if (years.length < 2) throw new Error('유효한 NDVI 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요.');
+
+    async function doSeason(s) {
+      var items = [];
+      try {
+        var res = await fetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collections: ['sentinel-2-l2a'],
+            intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: s.from + '/' + s.to,
+            query: { 'eo:cloud_cover': { lt: 30 } },
+            sortby: [{ field: 'eo:cloud_cover', direction: 'asc' }],
+            limit: CANDIDATES,
+            fields: { include: ['properties.datetime', 'properties.s2:processing_baseline', 'id'] }
+          })
+        }, 1);
+        items = res.features || [];
+      } catch (e) { searchFail++; }
+      var got = 0;
+      for (var i = 0; i < items.length && got < NEED; i++) {
+        var it = items[i];
+        var baseline = it.properties['s2:processing_baseline'] || '00.00';
+        var expr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
+        try {
+          var sj = await fetchJson(PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id +
+            '&expression=' + encodeURIComponent(expr) + '&asset_as_band=true',
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: feat }, 0);
+          var sv = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
+          if (sv && sv.mean != null && isFinite(sv.mean)) {
+            var v = sv.mean;
+            if (s.kind === 'summer') {
+              if (ndviByYear[s.year] == null || v > ndviByYear[s.year]) ndviByYear[s.year] = v;
+            } else {
+              if (springByYear[s.year] == null || v < springByYear[s.year]) springByYear[s.year] = v;
+            }
+            got++; ok++;
+          } else { fail++; }
+        } catch (e) { fail++; }
+        showProgress();
+      }
+      seasonsDone++;
+      showProgress();
+    }
+
+    showProgress();
+    var nextIdx = 0;
+    async function runner() {
+      while (nextIdx < seasons.length) { await doSeason(seasons[nextIdx++]); }
+    }
+    var runners = [];
+    for (var k = 0; k < Math.min(CONCURRENCY, seasons.length); k++) runners.push(runner());
+    await Promise.all(runners);
+
+    if (searchFail === seasons.length) {
+      throw new Error('위성 데이터 서버(Planetary Computer)가 응답하지 않습니다. 잠시 후 다시 시도하세요');
+    }
+    var years = Object.keys(ndviByYear).map(Number).sort(function(a, b) { return a - b; });
+    if (years.length < 2) {
+      throw new Error(fail > ok ? '위성 데이터 서버 응답이 불안정합니다. 잠시 후 다시 시도하세요' : '유효한 여름 NDVI 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요');
+    }
     renderChart({
       label: lat.toFixed(4) + ', ' + lon.toFixed(4),
       lat: lat, lon: lon,
       years: years,
       ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
       ndvi_spring: years.map(function(y) { return springByYear[y] != null ? Math.round(springByYear[y] * 100) / 100 : null; }),
-      scenes: items.length,
-      note: years.length + '년간 여름(6~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI를 표시합니다.'
+      scenes: ok,
+      note: years[0] + '~' + years[years.length - 1] + '년 여름(6~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
     });
-    status.textContent = '조회 완료: ' + years.length + '년, ' + items.length + '개 장면 분석';
+    status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '');
     status.style.color = '#3CB371';
   } catch (e) {
     status.textContent = '조회 실패: ' + e.message + ' — 샘플 보기를 먼저 사용해 보세요.';
