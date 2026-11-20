@@ -444,10 +444,15 @@ nav {
 }
 .lookup-inputs input:focus { border-color: var(--accent-light); }
 .lookup-inputs input::placeholder { color: #64748B; }
-.lookup-addr {
-  grid-column: 1 / -1;
-  font-family: 'Noto Sans KR', sans-serif !important;
+.lookup-map-hint { font-size: 13px; color: #CBD5E1; margin-bottom: 10px; line-height: 1.5; }
+.lookup-map {
+  height: 320px; border-radius: 10px; margin-bottom: 12px;
+  border: 1px solid rgba(255,255,255,0.12); background: #0B1A12;
+  position: relative; z-index: 0; isolation: isolate;  /* 지도 버튼이 상단 메뉴 위로 올라오지 않게 */
 }
+@media (max-width: 540px) { .lookup-map { height: 260px; } }
+.lookup-map .leaflet-control-attribution { font-size: 9px; }
+.lookup-addr-note { font-size: 12px; color: #64748B; margin-top: 8px; line-height: 1.5; }
 .lookup-actions {
   display: flex; gap: 10px; margin-top: 14px;
   flex-wrap: wrap;
@@ -774,13 +779,15 @@ footer {
   <div class="inner">
     <div class="section-label">Quick Lookup</div>
     <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
-    <p class="section-desc">좌표를 입력하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
+    <p class="section-desc">지도에서 땅을 찾아 클릭하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
     <div class="lookup-box">
+      <div class="lookup-map-hint">① 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
+      <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
       <div class="lookup-inputs">
-        <input type="text" id="luAddr" class="lookup-addr" placeholder="지번 주소 (예: 경기도 광주시 오포읍 능평리 207-1)" disabled title="지번 조회는 준비 중입니다">
-        <input type="text" id="luLat" placeholder="위도 (예: 37.3456)">
-        <input type="text" id="luLon" placeholder="경도 (예: 127.1234)">
+        <input type="text" id="luLat" placeholder="위도 (지도 클릭 시 자동 입력)" inputmode="decimal">
+        <input type="text" id="luLon" placeholder="경도 (지도 클릭 시 자동 입력)" inputmode="decimal">
       </div>
+      <div class="lookup-addr-note">지번으로 바로 찾기는 준비 중입니다. 지번만 알고 계시면 아래 문의로 보내 주시면 위치를 확인해 드립니다.</div>
       <div class="lookup-actions">
         <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
         <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
@@ -1064,18 +1071,21 @@ if (inquiryForm) {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 var luChart = null;
 var PC_API = 'https://planetarycomputer.microsoft.com';
 
 var DEMO_DATA = {
-  label: '경기도 광주시 오포읍 능평리 207-1 (데모)',
-  lat: 37.3310, lon: 127.1365,
+  // 2026-11-20 실측: 전북 김제 만경평야 논 한가운데 약 300m 사각형 평균 (여름 7~9월 최고, 봄 3~5월 최저)
+  label: '샘플 — 전북 김제 만경평야 논 (실측값)',
+  lat: 35.8155, lon: 126.8392,
   years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
-  ndvi_summer: [0.72, 0.68, 0.61, 0.54, 0.42, 0.28, 0.23, 0.65, 0.70, 0.75],
-  ndvi_spring: [0.35, 0.32, 0.28, 0.22, 0.18, 0.12, 0.10, 0.30, 0.33, 0.38],
-  scenes: 87,
-  note: '2022~2023년 NDVI 하락은 휴경/맨땅 상태를 시사합니다. 2024년 이후 경작 재개 패턴이 관측됩니다.'
+  ndvi_summer: [0.81, 0.82, 0.86, 0.85, 0.84, 0.80, 0.80, 0.84, 0.87, 0.86],
+  ndvi_spring: [0.32, 0.26, 0.20, 0.46, 0.37, 0.25, 0.29, 0.32, 0.33, 0.32],
+  scenes: 58,
+  note: '10년 내내 봄(3~5월)에는 0.2~0.46으로 낮고 여름(7~9월)에는 0.8 이상으로 올라갑니다. 해마다 모내기 전 맨땅에서 벼가 자라는, 계속 경작 중인 논의 전형적인 패턴입니다.'
 };
 
 function renderChart(data) {
@@ -1156,9 +1166,48 @@ function renderChart(data) {
 function runDemo() {
   document.getElementById('luLat').value = DEMO_DATA.lat;
   document.getElementById('luLon').value = DEMO_DATA.lon;
-  document.getElementById('luStatus').textContent = '샘플 데이터를 표시합니다 (경기도 광주시 오포읍)';
+  document.getElementById('luStatus').textContent = '샘플을 표시합니다 (전북 김제 만경평야 논, 실제 위성 관측값)';
+  luSetPoint(DEMO_DATA.lat, DEMO_DATA.lon, 15);
   renderChart(DEMO_DATA);
 }
+
+// ── 위치 선택 지도 (Leaflet + Esri 위성영상) ──
+var luMap = null, luMarker = null, luBox = null;
+function luInitMap() {
+  if (luMap || typeof L === 'undefined' || !document.getElementById('luMap')) return;
+  luMap = L.map('luMap', { scrollWheelZoom: false, tap: true }).setView([36.3, 127.8], 7);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, attribution: 'Tiles &copy; Esri &mdash; Esri, Maxar, Earthstar Geographics'
+  }).addTo(luMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, opacity: 0.8
+  }).addTo(luMap);
+  luMap.on('click', function(e) {
+    luSetPoint(e.latlng.lat, e.latlng.lng);
+    document.getElementById('luStatus').textContent = '위치를 선택했습니다. 사각형 안이 분석할 땅이 맞으면 "조회 시작"을 누르세요.';
+    document.getElementById('luStatus').style.color = '#94A3B8';
+  });
+  luMap.on('focus', function() { luMap.scrollWheelZoom.enable(); });
+  luMap.on('blur', function() { luMap.scrollWheelZoom.disable(); });
+  ['luLat', 'luLon'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      var la = parseFloat(document.getElementById('luLat').value);
+      var lo = parseFloat(document.getElementById('luLon').value);
+      if (!isNaN(la) && !isNaN(lo)) luSetPoint(la, lo, Math.max(luMap.getZoom(), 15));
+    });
+  });
+}
+function luSetPoint(lat, lon, zoom) {
+  document.getElementById('luLat').value = lat.toFixed(5);
+  document.getElementById('luLon').value = lon.toFixed(5);
+  if (!luMap) return;
+  var d = 0.0015;
+  var bounds = [[lat - d, lon - d], [lat + d, lon + d]];
+  if (luMarker) luMarker.setLatLng([lat, lon]); else luMarker = L.circleMarker([lat, lon], { radius: 5, color: '#FFFFFF', weight: 2, fillColor: '#3CB371', fillOpacity: 1 }).addTo(luMap);
+  if (luBox) luBox.setBounds(bounds); else luBox = L.rectangle(bounds, { color: '#3CB371', weight: 2, fill: false, dashArray: '5,4' }).addTo(luMap);
+  if (zoom) luMap.setView([lat, lon], zoom);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', luInitMap); else luInitMap();
 
 async function runLookup() {
   var lat = parseFloat(document.getElementById('luLat').value);
@@ -1175,7 +1224,7 @@ async function runLookup() {
   status.style.color = '#94A3B8';
   status.textContent = 'Planetary Computer에서 Sentinel-2 장면을 검색 중...';
   try {
-    // 연도·계절(봄 3~5월, 여름 6~9월)마다 구름 적은 순으로 장면을 받아,
+    // 연도·계절(봄 3~5월, 여름 7~9월)마다 구름 적은 순으로 장면을 받아,
     // NDVI가 2장 나올 때까지만 계산한다. 서버가 끊는 장면은 다시 시도하지 않고 다음 장면으로 넘어간다.
     var FIRST_YEAR = 2017;
     var thisYear = new Date().getFullYear();
@@ -1187,7 +1236,8 @@ async function runLookup() {
     var seasons = [];
     for (var yy = thisYear; yy >= FIRST_YEAR; yy--) {
       var sp = { year: yy, kind: 'spring', from: yy + '-03-01T00:00:00Z', to: yy + '-05-31T23:59:59Z' };
-      var su = { year: yy, kind: 'summer', from: yy + '-06-01T00:00:00Z', to: yy + '-09-30T23:59:59Z' };
+      // 여름은 7~9월: 6월은 모내기 직후라 논이 물에 잠겨 NDVI가 낮게 나온다
+      var su = { year: yy, kind: 'summer', from: yy + '-07-01T00:00:00Z', to: yy + '-09-30T23:59:59Z' };
       if (new Date(su.from) <= now) seasons.push(su);
       if (new Date(sp.from) <= now) seasons.push(sp);
     }
@@ -1241,8 +1291,12 @@ async function runLookup() {
         items = res.features || [];
       } catch (e) { searchFail++; }
       var got = 0;
+      var seenDates = {};
       for (var i = 0; i < items.length && got < NEED; i++) {
         var it = items[i];
+        var day = it.properties.datetime.slice(0, 10);
+        if (seenDates[day]) continue;  // 같은 날 인접 타일은 같은 영상이라 한 번만
+        seenDates[day] = true;
         var baseline = it.properties['s2:processing_baseline'] || '00.00';
         var expr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
         try {
@@ -1289,7 +1343,7 @@ async function runLookup() {
       ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
       ndvi_spring: years.map(function(y) { return springByYear[y] != null ? Math.round(springByYear[y] * 100) / 100 : null; }),
       scenes: ok,
-      note: years[0] + '~' + years[years.length - 1] + '년 여름(6~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
+      note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
     });
     status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '');
     status.style.color = '#3CB371';
