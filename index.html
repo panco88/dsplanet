@@ -519,6 +519,17 @@ nav {
 .legend-green::before { background: #4CAF50; }
 .legend-yellow::before { background: #FDD835; }
 .legend-brown::before { background: #A1887F; }
+.lookup-sar { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; }
+.lookup-sar:empty { display: none; }
+.lookup-sar-title { font-size: 13px; font-weight: 600; color: #CBD5E1; margin-bottom: 8px; }
+.lookup-sar-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 6px; }
+.lookup-sar-cell { border-radius: 6px; padding: 6px 4px; text-align: center; font-size: 11px; line-height: 1.35; }
+.lookup-sar-cell b { display: block; font-size: 12px; }
+.sar-none { background: rgba(76,175,80,0.15); color: #A5D6A7; }
+.sar-unsure { background: rgba(253,216,53,0.15); color: #FFE082; }
+.sar-bldg { background: rgba(239,68,68,0.18); color: #FCA5A5; }
+.sar-na { background: rgba(255,255,255,0.05); color: #64748B; }
+.lookup-sar-note { font-size: 11px; color: #64748B; margin-top: 8px; line-height: 1.6; }
 
 /* PARENT COMPANY BANNER */
 .parent-banner {
@@ -820,6 +831,7 @@ footer {
           <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
         </div>
         <div class="lookup-chart-meta" id="luMeta"></div>
+        <div class="lookup-sar" id="luSar"></div>
       </div>
     </div>
   </div>
@@ -1103,6 +1115,8 @@ var DEMO_DATA = {
   ndvi_summer: [0.81, 0.82, 0.86, 0.85, 0.84, 0.80, 0.80, 0.84, 0.87, 0.86],
   ndvi_spring: [0.32, 0.26, 0.20, 0.46, 0.37, 0.25, 0.29, 0.32, 0.33, 0.32],
   scenes: 58,
+  // 같은 지점 주변 약 60m, 해마다 1~3월 Sentinel-1 VV 최댓값 중앙값(dB)
+  sar: { 2017: -5.5, 2018: -7.6, 2019: -7.8, 2020: -6.4, 2021: -4.0, 2022: -5.9, 2023: -7.4, 2024: -4.8, 2025: -7.5, 2026: -6.5 },
   note: '10년 내내 봄(3~5월)에는 0.2~0.46으로 낮고 여름(7~9월)에는 0.8 이상으로 올라갑니다. 해마다 모내기 전 맨땅에서 벼가 자라는, 계속 경작 중인 논의 전형적인 패턴입니다.'
 };
 
@@ -1179,6 +1193,29 @@ function renderChart(data) {
     '위치: ' + data.lat.toFixed(4) + ', ' + data.lon.toFixed(4) +
     ' | 분석 장면: ' + data.scenes + '개 | 데이터: Copernicus Sentinel-2' +
     (data.note ? '<br>' + data.note : '');
+  renderSar(data.sar);
+}
+
+// 레이더(Sentinel-1) 겨울 VV 반사 최댓값 중앙값(dB) → 건물급 구조물 판정
+// 기준(경작 리포트 스킬과 같은 원리): 건물은 이중 반사로 -3dB 이상, 논밭은 -5~-10dB
+function sarClass(db) {
+  if (db == null) return ['sar-na', '자료 없음'];
+  if (db >= -3) return ['sar-bldg', '건물급 반사'];
+  if (db >= -4) return ['sar-unsure', '판단 보류'];
+  return ['sar-none', '흔적 없음'];
+}
+function renderSar(sar) {
+  var box = document.getElementById('luSar');
+  if (!sar || !Object.keys(sar).length) { box.innerHTML = ''; return; }
+  var ys = Object.keys(sar).map(Number).sort(function(a, b) { return a - b; });
+  var cells = ys.map(function(y) {
+    var c = sarClass(sar[y]);
+    return '<div class="lookup-sar-cell ' + c[0] + '"><b>' + y + '</b>' + c[1] + '</div>';
+  }).join('');
+  box.innerHTML = '<div class="lookup-sar-title">레이더로 본 건물급 구조물 (해마다 1~3월)</div>' +
+    '<div class="lookup-sar-row">' + cells + '</div>' +
+    '<div class="lookup-sar-note">Sentinel-1 레이더로 선택 지점 주변 약 60m 안에 건물처럼 강하게 반사되는 구조물이 있었는지 봅니다. ' +
+    '농막·비닐하우스·쉼터처럼 작거나 벽이 없는 시설은 잡히지 않는 것이 정상이며, 정확한 유무는 현장 사진·항공사진으로 확인해야 합니다.</div>';
 }
 
 function runDemo() {
@@ -1409,6 +1446,52 @@ async function runLookup() {
     if (searchFail === seasons.length) {
       throw new Error('위성 데이터 서버(Planetary Computer)가 응답하지 않습니다. 잠시 후 다시 시도하세요');
     }
+    // ── 레이더(Sentinel-1 RTC): 해마다 1~3월, 가장 많은 궤도에서 4장, 지점 주변 약 60m의 VV 최댓값 ──
+    var sarByYear = {};
+    var sh = 0.0003, shl = sh / Math.cos(lat * Math.PI / 180);
+    var sarFeat = JSON.stringify({ type: 'Feature', properties: {}, geometry: { type: 'Polygon',
+      coordinates: [[[lon-shl,lat-sh],[lon+shl,lat-sh],[lon+shl,lat+sh],[lon-shl,lat+sh],[lon-shl,lat-sh]]] } });
+    var sarYears = [];
+    for (var sy = FIRST_YEAR; sy <= thisYear; sy++) if (new Date(sy + '-01-15T00:00:00Z') <= now) sarYears.push(sy);
+    var sarDone = 0;
+    async function doSarYear(y) {
+      try {
+        var res = await fetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collections: ['sentinel-1-rtc'], intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: y + '-01-01T00:00:00Z/' + y + '-03-31T23:59:59Z', limit: 40,
+            fields: { include: ['id', 'properties.datetime', 'properties.sat:orbit_state', 'properties.sat:relative_orbit'] } })
+        }, 1);
+        var its = res.features || [];
+        var cnt = {};
+        its.forEach(function(f) { var k = f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit']; cnt[k] = (cnt[k] || 0) + 1; });
+        var best = Object.keys(cnt).sort(function(a, b) { return cnt[b] - cnt[a]; })[0];
+        its = its.filter(function(f) { return f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit'] === best; }).slice(0, 4);
+        var vals = [];
+        for (var i = 0; i < its.length; i++) {
+          try {
+            var sj = await fetchJson(PC_API + '/api/data/v1/item/statistics?collection=sentinel-1-rtc&item=' + its[i].id + '&assets=vv',
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: sarFeat }, 0);
+            var st = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
+            if (st && st.max > 0) vals.push(10 * Math.log10(st.max));
+          } catch (e) {}
+        }
+        if (vals.length) {
+          vals.sort(function(a, b) { return a - b; });
+          var m = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+          sarByYear[y] = Math.round(m * 10) / 10;
+        } else { sarByYear[y] = null; }
+      } catch (e) { sarByYear[y] = null; }
+      sarDone++;
+      status.textContent = '레이더로 건물 흔적 확인 중... (' + sarDone + '/' + sarYears.length + '년)';
+    }
+    status.textContent = '레이더로 건물 흔적 확인 중... (0/' + sarYears.length + '년)';
+    var sarIdx = 0;
+    async function sarRunner() { while (sarIdx < sarYears.length) { await doSarYear(sarYears[sarIdx++]); } }
+    var sarRunners = [];
+    for (var k2 = 0; k2 < Math.min(5, sarYears.length); k2++) sarRunners.push(sarRunner());
+    await Promise.all(sarRunners);
+
     var years = Object.keys(ndviByYear).map(Number).sort(function(a, b) { return a - b; });
     if (years.length < 2) {
       throw new Error(fail > ok ? '위성 데이터 서버 응답이 불안정합니다. 잠시 후 다시 시도하세요' : '유효한 여름 NDVI 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요');
@@ -1420,6 +1503,7 @@ async function runLookup() {
       ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
       ndvi_spring: years.map(function(y) { return springByYear[y] != null ? Math.round(springByYear[y] * 100) / 100 : null; }),
       scenes: ok,
+      sar: sarByYear,
       note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
     });
     status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '');
