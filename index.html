@@ -642,6 +642,10 @@ section[id], #luChartWrap { scroll-margin-top: 72px; }
   .hero-actions { margin-bottom: 32px; }
   .hero-actions .btn { flex: 1 1 100%; justify-content: center; }
 }
+
+.lu-order { display: block; margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: var(--accent); color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; text-align: center; }
+.lu-order span { display: block; font-weight: 400; font-size: 12.5px; opacity: .85; margin-top: 3px; }
+.lu-order[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -812,6 +816,7 @@ section[id], #luChartWrap { scroll-margin-top: 72px; }
         </div>
         <div class="lookup-chart-meta" id="luMeta"></div>
         <div class="lookup-sar" id="luSar"></div>
+        <a href="#contact" id="luOrder" class="lu-order" hidden onclick="luOrder(event)">이 땅 정밀 리포트 의뢰하기 →<span>항공사진·레이더 교차 판독, A4 PDF · 2~3영업일</span></a>
       </div>
     </div>
   </div>
@@ -1273,6 +1278,7 @@ function renderSar(sar) {
 }
 
 function runDemo() {
+  var ob0 = document.getElementById('luOrder'); if (ob0) ob0.hidden = true;
   document.getElementById('luLat').value = DEMO_DATA.lat;
   document.getElementById('luLon').value = DEMO_DATA.lon;
   document.getElementById('luStatus').textContent = '샘플을 표시합니다 (전북 김제 만경평야 논, 실제 위성 관측값)';
@@ -1558,7 +1564,7 @@ async function runLookup() {
       throw new Error(fail > ok ? '위성 데이터 서버 응답이 불안정합니다. 잠시 후 다시 시도하세요' : '유효한 여름 NDVI 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요');
     }
     renderChart({
-      label: lat.toFixed(4) + ', ' + lon.toFixed(4),
+      label: window.LU_LABEL || (lat.toFixed(4) + ', ' + lon.toFixed(4)),
       lat: lat, lon: lon,
       years: years,
       ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
@@ -1568,6 +1574,7 @@ async function runLookup() {
       note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
     });
     status.textContent = '조회 완료: ' + (window.LU_LABEL ? window.LU_LABEL + ' · ' : '') + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '') + ' — 위치가 어긋나면 지도에서 땅을 눌러 다시 조회하세요.';
+    var ob = document.getElementById('luOrder'); if (ob) ob.hidden = false;
     if (innerWidth < 1024) { var cw = document.getElementById('luChartWrap'); if (cw) cw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     try { if (window.LU_LABEL) history.replaceState(null, '', '?jibun=' + encodeURIComponent(window.LU_QUERY || window.LU_LABEL) + '#lookup'); } catch (e) {}
     status.style.color = '#3CB371';
@@ -1582,6 +1589,15 @@ async function runLookup() {
 }
 </script>
 <script>
+// 2026-11-20 조회 결과 → 리포트 의뢰 (문의 양식에 지번 미리 채움)
+function luOrder(e) {
+  if (e) e.preventDefault();
+  var lat = document.getElementById('luLat').value, lon = document.getElementById('luLon').value;
+  var f = document.getElementById('inqAddress'); if (f) f.value = window.LU_LABEL || (lat && lon ? '좌표 ' + lat + ', ' + lon : '');
+  var m = document.getElementById('inqMessage'); if (m && !m.value) m.value = '간편 조회를 해 봤습니다. 이 땅의 경작이력 리포트를 받고 싶습니다. (용도: )';
+  var c = document.getElementById('contact'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(function() { var n = document.getElementById('inqName'); if (n) n.focus({ preventScroll: true }); }, 700);
+}
 // 2026-11-20 지번 한 번에 조회 (첫 화면·조회 영역 공통)
 var LU_BUSY = false;
 async function luQuick() {
