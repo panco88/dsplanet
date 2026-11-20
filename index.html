@@ -583,6 +583,37 @@ footer {
   font-weight: 500; letter-spacing: 0.03em;
 }
 @media (max-width: 520px) { .trust-logos { gap: 24px; } }
+
+/* ===== 2026-11-20 넓은 화면 활용 (PC) ===== */
+@media (min-width: 768px) { .inner { padding-left: 32px; padding-right: 32px; } }
+@media (min-width: 1024px) {
+  .inner { max-width: 1240px; }
+  .section-desc { max-width: 720px; }
+  .hero-sub { max-width: 680px; }
+  .lookup-map { height: 420px; }
+  .lookup-chart-canvas { height: 300px; }
+}
+@media (min-width: 1440px) { .inner { max-width: 1320px; } }
+
+/* ===== 2026-11-20 휴대폰 접는 메뉴 ===== */
+.nav-burger-li { display: none; }
+.nav-burger { background: none; border: 1px solid rgba(255,255,255,0.2); color: #E2E8F0; border-radius: 6px; width: 36px; height: 34px; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.nav-drawer { display: none; border-top: 1px solid rgba(255,255,255,0.08); padding: 8px 16px 16px; }
+.nav-drawer a { display: block; padding: 13px 4px; color: #CBD5E1; text-decoration: none; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.nav-drawer a.nav-drawer-cta { border-bottom: none; margin-top: 10px; text-align: center; background: var(--accent); color: #FFFFFF; border-radius: 8px; font-weight: 600; }
+nav.menu-open .nav-drawer { display: block; }
+section[id] { scroll-margin-top: 64px; }
+@media (max-width: 720px) { .nav-burger-li { display: list-item; list-style: none; } }
+
+/* 2026-11-20 간편 조회: PC에서는 지도(왼쪽)와 결과(오른쪽)를 나란히 */
+@media (min-width: 1024px) {
+  .lookup-box { max-width: none; display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: start; }
+  .lookup-box .lookup-chart-wrap { margin-top: 0; display: block; position: sticky; top: 84px; }
+  .lookup-box .lookup-chart-wrap:not(.active) { min-height: 300px; display: grid; place-items: center; color: #64748B; font-size: 14px; }
+  .lookup-box .lookup-chart-wrap:not(.active) > * { display: none; }
+  .lookup-box .lookup-chart-wrap:not(.active)::before { content: "지번을 찾거나 지도를 클릭한 뒤 '조회 시작'을 누르면 여기에 10년 그래프가 나옵니다."; text-align: center; padding: 0 24px; }
+  .lookup-map { height: 440px; }
+}
 </style>
 </head>
 <body>
@@ -598,12 +629,22 @@ footer {
     </a>
     <ul class="nav-links">
       <li><a href="#services" class="hide-mobile">서비스</a></li>
-      <li><a href="#howit" class="hide-mobile">작동 원리</a></li>
       <li><a href="#lookup" class="hide-mobile">간편 조회</a></li>
+      <li><a href="#howit" class="hide-mobile">작동 원리</a></li>
       <li><a href="#pricing" class="hide-mobile">요금</a></li>
       <li><a href="#faq" class="hide-mobile">FAQ</a></li>
       <li><a href="#contact" class="nav-cta">문의하기</a></li>
+      <li class="nav-burger-li"><button type="button" class="nav-burger" aria-label="메뉴" aria-expanded="false" aria-controls="navDrawer" onclick="toggleNavMenu()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button></li>
     </ul>
+  </div>
+  <div class="nav-drawer" id="navDrawer">
+    <a href="#services">서비스</a>
+    <a href="#lookup">간편 조회 (무료)</a>
+    <a href="#howit">작동 원리</a>
+    <a href="#sample">샘플 리포트</a>
+    <a href="#pricing">요금</a>
+    <a href="#faq">FAQ</a>
+    <a href="#contact" class="nav-drawer-cta">문의 · 샘플 리포트 요청</a>
   </div>
 </nav>
 
@@ -612,7 +653,7 @@ footer {
   <div class="inner">
     <div class="hero-badge">
       <span class="dot"></span>
-      Sentinel-2 / SAR / 항공영상 실시간 분석
+      Sentinel-2 · Sentinel-1 레이더 · 항공영상 분석
     </div>
     <h1>위성으로 보는<br><span class="accent-word">토지의 진실</span></h1>
     <p class="hero-sub">
@@ -621,7 +662,7 @@ footer {
     </p>
     <div class="hero-actions">
       <a href="#contact" class="btn btn-primary">무료 샘플 리포트 요청</a>
-      <a href="#services" class="btn btn-outline">서비스 알아보기</a>
+      <a href="#lookup" class="btn btn-outline">무료 간편 조회 해보기</a>
     </div>
     <div class="stats-bar">
       <div class="stat">
@@ -698,6 +739,46 @@ footer {
   </div>
 </section>
 
+<!-- QUICK LOOKUP (간편 조회) -->
+<section class="section lookup" id="lookup">
+  <div class="inner">
+    <div class="section-label">Quick Lookup</div>
+    <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
+    <p class="section-desc">지번을 입력하거나 지도에서 땅을 클릭하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off">
+        <button type="button" id="luAddrBtn" onclick="luFindAddr()">지번 찾기</button>
+      </div>
+      <div class="lookup-map-hint">지번을 찾거나 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
+      <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="luLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="luLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">지번 위치는 필지의 대표 좌표라 실제 밭과 조금 어긋날 수 있습니다. 사각형이 땅 위에 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="luStatus"></div>
+      </div>
+      <div class="lookup-chart-wrap" id="luChartWrap">
+        <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
+        <div class="lookup-chart-canvas"><canvas id="luChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-green">경작 (NDVI 0.4+)</span>
+          <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
+          <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="luMeta"></div>
+        <div class="lookup-sar" id="luSar"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="section howit" id="howit">
   <div class="inner">
@@ -719,7 +800,7 @@ footer {
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <h4>AI 판독 + 전문가 검증</h4>
+        <h4>자동 판독 + 전문가 검증</h4>
         <p>NDVI 시계열 분석, 레이더 검증, 연도별 영상 대조</p>
       </div>
       <div class="step">
@@ -794,44 +875,6 @@ footer {
           <li>농지 전수조사 시행지침 기준에 따른 용어 사용</li>
           <li>의뢰인 진술과 관측 데이터 대조표</li>
         </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- QUICK LOOKUP (간편 조회) -->
-<section class="section lookup" id="lookup">
-  <div class="inner">
-    <div class="section-label">Quick Lookup</div>
-    <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
-    <p class="section-desc">지번을 입력하거나 지도에서 땅을 클릭하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
-    <div class="lookup-box">
-      <div class="lookup-search">
-        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off">
-        <button type="button" id="luAddrBtn" onclick="luFindAddr()">지번 찾기</button>
-      </div>
-      <div class="lookup-map-hint">지번을 찾거나 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
-      <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
-      <div class="lookup-inputs">
-        <input type="text" id="luLat" placeholder="위도 (자동 입력)" inputmode="decimal">
-        <input type="text" id="luLon" placeholder="경도 (자동 입력)" inputmode="decimal">
-      </div>
-      <div class="lookup-addr-note">지번 위치는 필지의 대표 좌표라 실제 밭과 조금 어긋날 수 있습니다. 사각형이 땅 위에 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
-      <div class="lookup-actions">
-        <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
-        <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
-      </div>
-      <div class="lookup-status" id="luStatus"></div>
-      <div class="lookup-chart-wrap" id="luChartWrap">
-        <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
-        <div class="lookup-chart-canvas"><canvas id="luChart"></canvas></div>
-        <div class="lookup-legend">
-          <span class="legend-green">경작 (NDVI 0.4+)</span>
-          <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
-          <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
-        </div>
-        <div class="lookup-chart-meta" id="luMeta"></div>
-        <div class="lookup-sar" id="luSar"></div>
       </div>
     </div>
   </div>
@@ -915,7 +958,7 @@ footer {
           <svg class="arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          DS플래닛의 리포트는 위성 관측 데이터에 기반한 사실 기록이며, 법률·세무 자문이 아닙니다. 다만 양도소득세 비과세 소명, 농지전용 검토 시 객관적 보조 자료로 활용되고 있습니다. 법적 판단은 반드시 관련 전문가(세무사, 변호사)와 상의하시기 바랍니다.
+          DS플래닛의 리포트는 위성 관측 데이터에 기반한 사실 기록이며, 법률·세무 자문이 아닙니다. 다만 양도소득세 비과세 소명, 농지전용 검토 시 객관적 보조 자료로 활용할 수 있습니다. 법적 판단은 반드시 관련 전문가(세무사, 변호사)와 상의하시기 바랍니다.
         </div></div>
       </div>
 
@@ -977,7 +1020,7 @@ footer {
         </div>
         <div class="contact-item">
           <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-          전화 문의 (이메일 선 접수)
+          전화 상담은 이메일로 먼저 접수해 주세요
         </div>
         <div class="contact-item">
           <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -1517,6 +1560,38 @@ async function runLookup() {
   }
 }
 </script>
+<script>
+// 2026-11-20 PC에서는 간편 조회가 화면에 들어오면 샘플 결과를 먼저 보여 준다 (오른쪽 빈칸 방지)
+(function() {
+  var sec = document.getElementById('lookup'); if (!sec || !('IntersectionObserver' in window)) return;
+  var ob = new IntersectionObserver(function(es) {
+    if (!es[0].isIntersecting) return; ob.disconnect();
+    var wrap = document.getElementById('luChartWrap');
+    if (innerWidth >= 1024 && wrap && !wrap.classList.contains('active') && typeof runDemo === 'function') {
+      if (typeof luInitMap === 'function') luInitMap();
+      runDemo();
+    }
+  }, { threshold: 0.25 });
+  ob.observe(sec);
+})();
+// 2026-11-20 휴대폰 접는 메뉴
+function toggleNavMenu(force) {
+  var nav = document.querySelector('nav'); if (!nav) return;
+  var open = (typeof force === 'boolean') ? force : !nav.classList.contains('menu-open');
+  nav.classList.toggle('menu-open', open);
+  var b = document.querySelector('.nav-burger'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.querySelectorAll('.nav-drawer a').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    // 메뉴를 먼저 닫고 나서 이동해야 위치가 어긋나지 않는다
+    var t = document.querySelector(a.getAttribute('href')); e.preventDefault(); toggleNavMenu(false);
+    if (t) requestAnimationFrame(function() { t.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', a.getAttribute('href')); });
+  });
+});
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') toggleNavMenu(false); });
+window.addEventListener('resize', function() { if (innerWidth > 720) toggleNavMenu(false); });
+</script>
+
 
 </body>
 </html>
