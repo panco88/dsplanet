@@ -618,6 +618,30 @@ section[id] { scroll-margin-top: 64px; }
 /* 2026-11-20 공개 샘플 PDF 버튼 */
 .sample-pdf-btn { display:block; margin-top:16px; text-align:center; padding:12px; border-radius:8px; background:var(--accent); color:#FFFFFF; font-weight:600; font-size:14px; text-decoration:none; }
 .sample-pdf-btn:hover { opacity:.9; }
+
+/* ===== 2026-11-20 첫 화면 지번 바로 조회 · 휴대폰 ===== */
+.hero-quick { max-width: 560px; margin: 0 0 22px; padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(60,179,113,0.35); }
+.hero-quick-label { display: block; font-size: 15px; font-weight: 600; color: #FFFFFF; margin-bottom: 10px; }
+.hero-quick-row { display: flex; gap: 8px; }
+.hero-quick-row input { flex: 1; min-width: 0; height: 50px; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.25); color: #FFFFFF; font-size: 16px; font-family: 'Noto Sans KR', sans-serif; outline: none; }
+.hero-quick-row input:focus { border-color: var(--accent-light); }
+.hero-quick-row input::placeholder { color: #7C8B83; }
+.hero-quick-row button { flex-shrink: 0; height: 50px; padding: 0 20px; border-radius: 8px; border: none; background: var(--accent); color: #FFFFFF; font-size: 16px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif; cursor: pointer; }
+.hero-quick-note { margin-top: 8px; font-size: 12.5px; color: #94A3B8; }
+.lookup-search input { font-size: 16px; min-height: 48px; }
+.lookup-search button { min-height: 48px; }
+.btn-lookup, .btn-demo { min-height: 48px; }
+.lu-progress { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; margin: 6px 0 4px; }
+.lu-progress > div { height: 100%; width: 4%; background: linear-gradient(90deg, var(--accent), var(--accent-light)); transition: width .4s ease; }
+.touch-only { display: none; }
+@media (hover: none) and (pointer: coarse) { .touch-only { display: block; color: #FFD54F; } }
+@media (max-width: 640px) {
+  .hero { padding-block: 44px 40px; }
+  .hero h1 { font-size: 32px; }
+  .hero-quick { padding: 14px; margin-bottom: 18px; }
+  .hero-actions { margin-bottom: 32px; }
+  .hero-actions .btn { flex: 1 1 100%; justify-content: center; }
+}
 </style>
 </head>
 <body>
@@ -664,9 +688,17 @@ section[id] { scroll-margin-top: 64px; }
       농지 경작이력, 토지 이용변화, 건설현장 진척까지.
       DS플래닛은 위성 데이터로 땅의 과거와 현재를 읽어, 의사결정에 필요한 객관적 근거를 제공합니다.
     </p>
+    <form class="hero-quick" onsubmit="heroQuick(event)" role="search" aria-label="내 땅 10년 이력 바로 보기">
+      <label for="heroAddr" class="hero-quick-label">내 땅 10년 이력, 지번만 넣으면 무료로 바로 봅니다</label>
+      <div class="hero-quick-row">
+        <input type="text" id="heroAddr" placeholder="예: 김제시 진봉면 정당리 100" autocomplete="off" enterkeyhint="search">
+        <button type="submit">바로 조회</button>
+      </div>
+      <div class="hero-quick-note">위성 영상 약 40장을 분석합니다 · 1분 안팎 · 회원가입 없음</div>
+    </form>
     <div class="hero-actions">
       <a href="/reports/dsplanet-sample-farm-history.pdf" target="_blank" rel="noopener" class="btn btn-primary">샘플 리포트 보기 (PDF)</a>
-      <a href="#lookup" class="btn btn-outline">무료 간편 조회 해보기</a>
+      <a href="#lookup" class="btn btn-outline">지도에서 직접 고르기</a>
     </div>
     <div class="stats-bar">
       <div class="stat">
@@ -752,10 +784,11 @@ section[id] { scroll-margin-top: 64px; }
     <div class="lookup-box">
       <div class="lookup-left">
       <div class="lookup-search">
-        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off">
-        <button type="button" id="luAddrBtn" onclick="luFindAddr()">지번 찾기</button>
+        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="luAddrBtn" onclick="luQuick()">바로 조회</button>
       </div>
       <div class="lookup-map-hint">지번을 찾거나 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 땅을 고르세요.</div>
       <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
       <div class="lookup-inputs">
         <input type="text" id="luLat" placeholder="위도 (자동 입력)" inputmode="decimal">
@@ -767,6 +800,7 @@ section[id] { scroll-margin-top: 64px; }
         <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
       </div>
       <div class="lookup-status" id="luStatus"></div>
+      <div class="lu-progress" id="luProgWrap" hidden><div id="luProg"></div></div>
       </div>
       <div class="lookup-chart-wrap" id="luChartWrap">
         <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
@@ -1250,7 +1284,7 @@ function runDemo() {
 var luMap = null, luMarker = null, luBox = null;
 function luInitMap() {
   if (luMap || typeof L === 'undefined' || !document.getElementById('luMap')) return;
-  luMap = L.map('luMap', { scrollWheelZoom: false, tap: true }).setView([36.3, 127.8], 7);
+  luMap = L.map('luMap', { scrollWheelZoom: false, tap: true, dragging: !L.Browser.mobile }).setView([36.3, 127.8], 7);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 18, attribution: 'Tiles &copy; Esri &mdash; Esri, Maxar, Earthstar Geographics'
   }).addTo(luMap);
@@ -1258,7 +1292,7 @@ function luInitMap() {
     maxZoom: 18, opacity: 0.8
   }).addTo(luMap);
   luMap.on('click', function(e) {
-    luSetPoint(e.latlng.lat, e.latlng.lng);
+    luSetPoint(e.latlng.lat, e.latlng.lng); window.LU_LABEL = null; window.LU_QUERY = null;
     document.getElementById('luStatus').textContent = '위치를 선택했습니다. 사각형 안이 분석할 땅이 맞으면 "조회 시작"을 누르세요.';
     document.getElementById('luStatus').style.color = '#94A3B8';
   });
@@ -1309,7 +1343,7 @@ async function luFindAddr() {
   if (addr.length < 4) {
     status.textContent = '지번을 입력하세요 (예: 김제시 진봉면 정당리 100)';
     status.style.color = '#EF4444';
-    return;
+    return false;
   }
   btn.disabled = true; btn.textContent = '찾는 중...';
   status.style.color = '#94A3B8';
@@ -1324,23 +1358,26 @@ async function luFindAddr() {
     if (!res) {
       status.textContent = '해당 지번을 찾지 못했습니다. 시·군·구와 읍·면·리를 포함해 다시 입력하거나 지도에서 직접 클릭해 주세요.';
       status.style.color = '#EF4444';
-      return;
+      return false;
     }
     var lat = parseFloat(res.result.point.y), lon = parseFloat(res.result.point.x);
     luSetPoint(lat, lon, 16);
     var label = res.refined && res.refined.text ? res.refined.text : addr;
-    status.textContent = '찾았습니다: ' + label + ' — 사각형이 분석할 땅 위에 있는지 확인한 뒤 "조회 시작"을 누르세요.';
+    status.textContent = '찾았습니다: ' + label;
     status.style.color = '#3CB371';
+    window.LU_LABEL = label;
+    return true;
   } catch (e) {
     status.textContent = '지번 검색 서버가 응답하지 않습니다. 잠시 후 다시 시도하거나 지도에서 직접 클릭해 주세요.';
     status.style.color = '#EF4444';
+    return false;
   } finally {
-    btn.disabled = false; btn.textContent = '지번 찾기';
+    btn.disabled = false; btn.textContent = '바로 조회';
   }
 }
 (function() {
   var a = document.getElementById('luAddr');
-  if (a) a.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); luFindAddr(); } });
+  if (a) a.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); luQuick(); } });
 })();
 
 async function runLookup() {
@@ -1401,8 +1438,14 @@ async function runLookup() {
     var springByYear = {};
     var seasonsDone = 0, searchFail = 0, ok = 0, fail = 0;
 
+    var progWrap = document.getElementById('luProgWrap'), prog = document.getElementById('luProg');
+    if (progWrap) progWrap.hidden = false;
     function showProgress() {
-      status.textContent = '위성 장면 분석 중... (' + seasonsDone + '/' + seasons.length + '개 계절, ' + FIRST_YEAR + '~' + thisYear + '년)' +
+      var tot = seasons.length + (typeof sarYears !== 'undefined' && sarYears ? sarYears.length : 0);
+      var done = seasonsDone + (typeof sarDone === 'number' ? sarDone : 0);
+      var pct = tot ? Math.min(100, Math.round(done / tot * 100)) : 0;
+      if (prog) prog.style.width = Math.max(4, pct) + '%';
+      status.textContent = '위성 영상 분석 중... ' + pct + '% (' + FIRST_YEAR + '~' + thisYear + '년, 광학 위성과 레이더)' +
         (fail ? ' · 서버 지연으로 건너뜀 ' + fail + '건' : '');
     }
 
@@ -1454,18 +1497,6 @@ async function runLookup() {
       showProgress();
     }
 
-    showProgress();
-    var nextIdx = 0;
-    async function runner() {
-      while (nextIdx < seasons.length) { await doSeason(seasons[nextIdx++]); }
-    }
-    var runners = [];
-    for (var k = 0; k < Math.min(CONCURRENCY, seasons.length); k++) runners.push(runner());
-    await Promise.all(runners);
-
-    if (searchFail === seasons.length) {
-      throw new Error('위성 데이터 서버(Planetary Computer)가 응답하지 않습니다. 잠시 후 다시 시도하세요');
-    }
     // ── 레이더(Sentinel-1 RTC): 해마다 1~3월, 가장 많은 궤도에서 4장, 지점 주변 약 60m의 VV 최댓값 ──
     var sarByYear = {};
     var sh = 0.0003, shl = sh / Math.cos(lat * Math.PI / 180);
@@ -1503,14 +1534,24 @@ async function runLookup() {
         } else { sarByYear[y] = null; }
       } catch (e) { sarByYear[y] = null; }
       sarDone++;
-      status.textContent = '레이더로 건물 흔적 확인 중... (' + sarDone + '/' + sarYears.length + '년)';
+      showProgress();
     }
-    status.textContent = '레이더로 건물 흔적 확인 중... (0/' + sarYears.length + '년)';
     var sarIdx = 0;
     async function sarRunner() { while (sarIdx < sarYears.length) { await doSarYear(sarYears[sarIdx++]); } }
     var sarRunners = [];
     for (var k2 = 0; k2 < Math.min(5, sarYears.length); k2++) sarRunners.push(sarRunner());
-    await Promise.all(sarRunners);
+    showProgress();
+    var nextIdx = 0;
+    async function runner() {
+      while (nextIdx < seasons.length) { await doSeason(seasons[nextIdx++]); }
+    }
+    var runners = [];
+    for (var k = 0; k < Math.min(CONCURRENCY, seasons.length); k++) runners.push(runner());
+    await Promise.all(runners.concat(sarRunners));  // 위성(NDVI)과 레이더를 동시에
+
+    if (searchFail === seasons.length) {
+      throw new Error('위성 데이터 서버(Planetary Computer)가 응답하지 않습니다. 잠시 후 다시 시도하세요');
+    }
 
     var years = Object.keys(ndviByYear).map(Number).sort(function(a, b) { return a - b; });
     if (years.length < 2) {
@@ -1526,25 +1567,53 @@ async function runLookup() {
       sar: sarByYear,
       note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
     });
-    status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '');
+    status.textContent = '조회 완료: ' + (window.LU_LABEL ? window.LU_LABEL + ' · ' : '') + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (서버 지연 ' + fail + '건 건너뜀)' : '') + ' — 위치가 어긋나면 지도에서 땅을 눌러 다시 조회하세요.';
+    if (innerWidth < 1024) { var cw = document.getElementById('luChartWrap'); if (cw) cw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    try { if (window.LU_LABEL) history.replaceState(null, '', '?jibun=' + encodeURIComponent(window.LU_QUERY || window.LU_LABEL) + '#lookup'); } catch (e) {}
     status.style.color = '#3CB371';
   } catch (e) {
     status.textContent = '조회 실패: ' + e.message + ' — 샘플 보기를 먼저 사용해 보세요.';
     status.style.color = '#EF4444';
   } finally {
+    var pw = document.getElementById('luProgWrap'); if (pw) pw.hidden = true;
     btn.disabled = false;
     btn.textContent = '조회 시작';
   }
 }
 </script>
 <script>
+// 2026-11-20 지번 한 번에 조회 (첫 화면·조회 영역 공통)
+var LU_BUSY = false;
+async function luQuick() {
+  if (LU_BUSY) return; LU_BUSY = true;
+  try {
+    window.LU_QUERY = (document.getElementById('luAddr').value || '').trim();
+    var found = await luFindAddr();
+    if (found) await runLookup();
+  } finally { LU_BUSY = false; }
+}
+function heroQuick(e) {
+  if (e) e.preventDefault();
+  var v = (document.getElementById('heroAddr').value || '').trim();
+  document.getElementById('luAddr').value = v;
+  var sec = document.getElementById('lookup'); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  luQuick();
+}
+(function() {
+  var m = location.search.match(/[?&]jibun=([^&]+)/);
+  if (!m) return;
+  var v = decodeURIComponent(m[1].replace(/\+/g, ' '));
+  window.LU_FROM_URL = true;
+  var go = function() { document.getElementById('heroAddr').value = v; heroQuick(); };
+  if (document.readyState === 'complete') setTimeout(go, 300); else window.addEventListener('load', function() { setTimeout(go, 300); });
+})();
 // 2026-11-20 PC에서는 간편 조회가 화면에 들어오면 샘플 결과를 먼저 보여 준다 (오른쪽 빈칸 방지)
 (function() {
   var sec = document.getElementById('lookup'); if (!sec || !('IntersectionObserver' in window)) return;
   var ob = new IntersectionObserver(function(es) {
     if (!es[0].isIntersecting) return; ob.disconnect();
     var wrap = document.getElementById('luChartWrap');
-    if (innerWidth >= 1024 && wrap && !wrap.classList.contains('active') && typeof runDemo === 'function') {
+    if (innerWidth >= 1024 && !window.LU_FROM_URL && !LU_BUSY && wrap && !wrap.classList.contains('active') && typeof runDemo === 'function') {
       if (typeof luInitMap === 'function') luInitMap();
       runDemo();
     }
