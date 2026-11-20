@@ -646,6 +646,20 @@ section[id], #luChartWrap { scroll-margin-top: 72px; }
 .lu-order { display: block; margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: var(--accent); color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; text-align: center; }
 .lu-order span { display: block; font-weight: 400; font-size: 12.5px; opacity: .85; margin-top: 3px; }
 .lu-order[hidden] { display: none; }
+
+/* 2026-11-20 상단 바: '문의하기'가 두 줄로 깨지지 않게 (휴대폰 글자 크기를 키운 경우 포함) */
+.nav-cta, .nav-links a, .logo { white-space: nowrap; }
+.nav-links { min-width: 0; }
+@media (max-width: 420px) {
+  .nav-inner { gap: 8px; }
+  .nav-links { gap: 8px; }
+  .logo { font-size: 18px; gap: 6px; }
+  .nav-cta { padding: 7px 12px; }
+}
+@media (max-width: 480px) { .cta-long { display: none; } }  /* 휴대폰에서는 '문의' 두 글자로 */
+@media (max-width: 300px) {
+  .nav-links li:has(> .nav-cta) { display: none; }  /* 접는 메뉴 안에 '문의' 버튼이 있다 */
+}
 </style>
 </head>
 <body>
@@ -665,7 +679,7 @@ section[id], #luChartWrap { scroll-margin-top: 72px; }
       <li><a href="#howit" class="hide-mobile">작동 원리</a></li>
       <li><a href="#pricing" class="hide-mobile">요금</a></li>
       <li><a href="#faq" class="hide-mobile">FAQ</a></li>
-      <li><a href="#contact" class="nav-cta">문의하기</a></li>
+      <li><a href="#contact" class="nav-cta">문의<span class="cta-long">하기</span></a></li>
       <li class="nav-burger-li"><button type="button" class="nav-burger" aria-label="메뉴" aria-expanded="false" aria-controls="navDrawer" onclick="toggleNavMenu()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button></li>
     </ul>
   </div>
