@@ -1349,7 +1349,7 @@ async function runLookup() {
   var status = document.getElementById('luStatus');
   var btn = document.getElementById('luBtn');
   if (isNaN(lat) || isNaN(lon) || lat < 33 || lat > 43 || lon < 124 || lon > 132) {
-    status.textContent = '올바른 좌표를 입력하세요 (한국 범위: 위도 33~43, 경도 124~132)';
+    status.textContent = (isNaN(lat) || isNaN(lon)) ? '먼저 지번을 찾거나 지도에서 땅을 클릭해 위치를 골라 주세요.' : '국내 위치만 조회할 수 있습니다 (위도 33~43, 경도 124~132).';
     status.style.color = '#EF4444';
     return;
   }
