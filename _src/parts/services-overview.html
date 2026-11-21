@@ -1,0 +1,102 @@
+
+<!-- SERVICES OVERVIEW — 3축 서비스 소개 -->
+<section class="section" style="background:var(--bg);">
+  <div class="inner">
+    <div class="section-label">Our services</div>
+    <h2 class="section-title">위성 데이터로 답하는 세 가지 영역</h2>
+    <p class="section-desc" style="max-width:680px;">
+      DS플래닛은 토지·도로·건물, 세 가지 영역에서 위성 관측 데이터를 분석하여 세금·투자·관리의 객관적 근거를 제공합니다. 각 영역에서 무료 간편 조회 또는 정밀 리포트를 이용할 수 있습니다.
+    </p>
+
+    <!-- 1. 토지 분석 -->
+    <div style="margin-top:48px;padding:36px 32px;background:var(--surface);border:1px solid var(--border);border-radius:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 L7 12 L11 16 L15 8 L21 14"/><path d="M15 4h6v6"/></svg>
+        </div>
+        <h3 style="font-family:var(--font-display);font-size:22px;font-weight:800;">토지 분석</h3>
+      </div>
+      <p style="font-size:15px;color:var(--fg-muted);line-height:1.7;margin-bottom:20px;">
+        이 땅에서 농사를 지었는가? 건물이 있었는가? 물에 잠긴 적은?<br>
+        10년치 위성 시계열로 경작이력, 건물 흔적, 침수·형질변경을 판독합니다.
+      </p>
+      <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:12px;">무엇이 조회되나?</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">NDVI</strong> — 식생지수 10년 시계열<br>경작·휴경·임야화 연도별 판독
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">SAR</strong> — 건물급 구조물 감지<br>무허가 건축물, 신축·철거 시점
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">NDMI·BSI</strong> — 수분·나지 지수<br>침수 이력, 형질변경, 종합 타임라인
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--fg-muted);margin-bottom:16px;">
+        <strong>활용:</strong> 양도세 비과세 소명 · 자경농 증명 · 농지처분명령 대응 · 경매 토지 스크리닝 · 매도자 경작 증빙
+      </div>
+      <a href="/lookup/" class="btn btn-primary" style="background:var(--accent);">토지 간편 조회 (무료) &rarr;</a>
+    </div>
+
+    <!-- 2. 도로 편입 -->
+    <div style="margin-top:24px;padding:36px 32px;background:var(--surface);border:1px solid var(--border);border-radius:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16h20M4 12h4M10 12h4M16 12h4"/><path d="M4 8h16"/><path d="M6 4h12"/></svg>
+        </div>
+        <h3 style="font-family:var(--font-display);font-size:22px;font-weight:800;">도로 편입</h3>
+      </div>
+      <p style="font-size:15px;color:var(--fg-muted);line-height:1.7;margin-bottom:20px;">
+        내 땅이 도로가 됐는데 세금은 그대로?<br>
+        보상 없이 도로에 편입된 토지의 재산세 비과세 여부를 진단합니다.
+      </p>
+      <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:12px;">무엇이 조회되나?</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">편입 시점</strong> — 위성 시계열 분석<br>토지 → 도로 변곡점 특정
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">Before/After</strong> — 증빙 영상<br>비과세 신청 첨부 자료
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">점용 현황</strong> — 불필요 점용 판별<br>앞으로의 점용료 절감 진단
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--fg-muted);margin-bottom:16px;">
+        <strong>활용:</strong> 재산세 비과세 전환 · 최대 5년치 환급 · 도로점용료 절감 · 세무사 연결
+      </div>
+      <a href="/road/" class="btn btn-primary" style="background:var(--accent);">도로 편입 진단 자세히 &rarr;</a>
+    </div>
+
+    <!-- 3. 건설 모니터링 -->
+    <div style="margin-top:24px;padding:36px 32px;background:var(--surface);border:1px solid var(--border);border-radius:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10a2 2 0 012-2h12a2 2 0 012 2v10"/><path d="M2 20h20"/><path d="M12 12v4"/></svg>
+        </div>
+        <h3 style="font-family:var(--font-display);font-size:22px;font-weight:800;">건설 모니터링</h3>
+      </div>
+      <p style="font-size:15px;color:var(--fg-muted);line-height:1.7;margin-bottom:20px;">
+        건설 현장이 계획대로 가고 있는가?<br>
+        접근 허가 없이, 날씨와 무관하게, 전국·해외 건설현장 공정률을 정기 모니터링합니다.
+      </p>
+      <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:12px;">무엇이 조회되나?</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">변화 탐지</strong> — 토공량·건물 면적<br>시계열 비교 정량화
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">AI 분석</strong> — 공정 단계 자동 분류<br>지연 예측, 완공 시점 추정
+        </div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:8px;">
+          <strong style="color:var(--accent);">정량 리포트</strong> — 진행률 0~100%<br>히트맵, Before/After 영상
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--fg-muted);margin-bottom:16px;">
+        <strong>활용:</strong> PF 대출 관리 · 시공 검증 · 경쟁사 벤치마킹 · 다수 현장 통합 관리
+      </div>
+      <a href="/construction/" class="btn btn-primary" style="background:var(--accent);">건설 모니터링 자세히 &rarr;</a>
+    </div>
+
+  </div>
+</section>

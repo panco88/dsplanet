@@ -30,17 +30,14 @@ LOOKUP_LIBS = '''<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.
 PAGES = {
  '': ('DS플래닛 — 위성으로 보는 토지의 진실',
       ['hero', 'services', 'faq', 'cta']),
- 'services': ('토지 분석 — DS플래닛',
+ 'services': ('서비스 소개 — DS플래닛',
+      [intro('OUR SERVICES', '위성 데이터로 답하는 세 가지 영역',
+             'DS플래닛은 토지·도로·건물, 세 가지 영역에서 위성 관측 데이터를 분석하여 세금·투자·관리의 객관적 근거를 제공합니다.'),
+       'services-overview', 'cta']),
+ 'lookup': ('토지 분석 — DS플래닛',
       [intro('LAND ANALYSIS', '위성이 답하는 토지의 질문',
              '현장 방문 없이, 위성이 10년 동안 찍어 둔 기록에서 답을 꺼냅니다. 간편 조회는 무료이고, 정밀 리포트는 전문가가 판독한 보고서로 납품합니다.'),
-       '''<div style="text-align:center;padding:20px 16px 0;">
-  <a href="/lookup/" class="btn btn-primary" style="background:var(--accent);font-size:15px;">내 땅 간편 조회 (무료) &rarr;</a>
-</div>''',
-       'why', 'service-detail', 'usecases', 'cta']),
- 'lookup': ('간편 조회 — DS플래닛',
-      [intro('QUICK LOOKUP', '간편 조회',
-             '지번 하나면 10년치 경작이력을 무료로 조회합니다. Sentinel-2 광학위성과 Sentinel-1 레이더로 식생지수(NDVI)와 건물급 구조물을 함께 분석합니다.'),
-       'lookup']),
+       'why', 'service-detail', 'usecases', 'lookup']),
  'reports': ('리포트 소개 — DS플래닛',
       [intro('REPORTS', '분석 리포트',
              '위성 관측 데이터와 항공영상을 바탕으로, 대상 필지의 경작이력·건물 유무·토지 변화를 정리한 보고서를 제공합니다.'),
