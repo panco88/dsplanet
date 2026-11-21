@@ -50,6 +50,10 @@ PAGES = {
       [intro('ABOUT', '회사 소개',
              'DS플래닛은 위성 데이터로 토지의 과거를 읽는 부동산 분석 서비스입니다. 동산건설주식회사의 위성 분석 사업 법인입니다.'),
        'faq', 'contact']),
+ 'construction': ('건설현장 모니터링 — DS플래닛',
+      [intro('CONSTRUCTION MONITORING', '건설 현장을 위성으로 감시합니다',
+             '접근 허가 없이, 날씨와 무관하게, 전국·해외 어느 현장이든 정기적으로 공정률을 측정합니다. PF 대출 관리, 시공 검증, 경쟁사 벤치마킹까지.'),
+       'construction', 'cta']),
 }
 
 head, nav, footer = part('head'), part('nav'), part('footer')
