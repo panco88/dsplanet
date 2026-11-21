@@ -33,6 +33,9 @@ PAGES = {
  'services': ('토지 분석 — DS플래닛',
       [intro('LAND ANALYSIS', '위성이 답하는 토지의 질문',
              '현장 방문 없이, 위성이 10년 동안 찍어 둔 기록에서 답을 꺼냅니다. 간편 조회는 무료이고, 정밀 리포트는 전문가가 판독한 보고서로 납품합니다.'),
+       '''<div style="text-align:center;padding:20px 16px 0;">
+  <a href="/lookup/" class="btn btn-primary" style="background:var(--accent);font-size:15px;">내 땅 간편 조회 (무료) &rarr;</a>
+</div>''',
        'why', 'service-detail', 'usecases', 'cta']),
  'lookup': ('간편 조회 — DS플래닛',
       [intro('QUICK LOOKUP', '간편 조회',
