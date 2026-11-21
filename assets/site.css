@@ -488,6 +488,17 @@ nav {
 .sar-na { background: rgba(255,255,255,0.05); color: #64748B; }
 .lookup-sar-note { font-size: 11px; color: #64748B; margin-top: 8px; line-height: 1.6; }
 
+/* TIMELINE TABLE */
+.tl-title { font-size: 14px; font-weight: 600; color: #CBD5E1; margin: 20px 0 10px; }
+.tl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tl-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #CBD5E1; min-width: 400px; }
+.tl-table th { background: rgba(255,255,255,0.06); padding: 7px 8px; text-align: center; font-weight: 600; font-size: 11px; color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+.tl-table td { padding: 6px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; white-space: nowrap; }
+.tl-good { color: #A5D6A7; }
+.tl-mid { color: #FFE082; }
+.tl-bad { color: #FCA5A5; }
+.tl-legend { font-size: 10px; color: #64748B; margin-top: 8px; line-height: 1.7; }
+
 /* PARENT COMPANY BANNER */
 .parent-banner {
   background: linear-gradient(135deg, #1A2E1A 0%, #223A22 100%);

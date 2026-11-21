@@ -112,6 +112,8 @@ var DEMO_DATA = {
   ndvi_summer: [0.81, 0.82, 0.86, 0.85, 0.84, 0.80, 0.80, 0.84, 0.87, 0.86],
   ndvi_spring: [0.32, 0.26, 0.20, 0.46, 0.37, 0.25, 0.29, 0.32, 0.33, 0.32],
   scenes: 58,
+  ndmi_summer: [0.35, 0.38, 0.42, 0.40, 0.37, 0.33, 0.35, 0.39, 0.41, 0.40],
+  bsi_summer: [-0.08, -0.10, -0.15, -0.12, -0.10, -0.06, -0.07, -0.11, -0.14, -0.13],
   sar: { 2017: -5.5, 2018: -7.6, 2019: -7.8, 2020: -6.4, 2021: -4.0, 2022: -5.9, 2023: -7.4, 2024: -4.8, 2025: -7.5, 2026: -6.5 },
   note: '10년 내내 봄(3~5월)에는 0.2~0.46으로 낮고 여름(7~9월)에는 0.8 이상으로 올라갑니다. 해마다 모내기 전 맨땅에서 벼가 자라는, 계속 경작 중인 논의 전형적인 패턴입니다.'
 };
@@ -192,6 +194,38 @@ function renderChart(data) {
     ' | 분석 장면: ' + data.scenes + '개 | 데이터: Copernicus Sentinel-2' +
     (data.note ? '<br>' + data.note : '');
   renderSar(data.sar);
+  renderTimeline(data);
+}
+
+function renderTimeline(data) {
+  var el = document.getElementById('luTimeline');
+  if (!el) return;
+  el.hidden = false;
+  var rows = '';
+  for (var i = 0; i < data.years.length; i++) {
+    var y = data.years[i];
+    var ndvi = data.ndvi_summer[i];
+    var ndmi = data.ndmi_summer ? data.ndmi_summer[i] : null;
+    var bsi = data.bsi_summer ? data.bsi_summer[i] : null;
+    var sarDb = data.sar ? data.sar[y] : null;
+    var farm = ndvi >= 0.4 ? '경작' : ndvi >= 0.2 ? '약한 식생' : '맨땅';
+    var farmCls = ndvi >= 0.4 ? 'tl-good' : ndvi >= 0.2 ? 'tl-mid' : 'tl-bad';
+    var moist = ndmi != null ? (ndmi >= 0.3 ? '습윤' : ndmi >= 0.1 ? '보통' : '건조') : '—';
+    var moistCls = ndmi != null ? (ndmi >= 0.3 ? 'tl-good' : ndmi >= 0.1 ? 'tl-mid' : 'tl-bad') : '';
+    var soil = bsi != null ? (bsi >= 0.1 ? '나지' : bsi >= -0.05 ? '혼합' : '식생') : '—';
+    var soilCls = bsi != null ? (bsi >= 0.1 ? 'tl-bad' : bsi >= -0.05 ? 'tl-mid' : 'tl-good') : '';
+    var bld = sarDb != null ? (sarDb >= -3 ? '있음' : sarDb >= -4 ? '불확실' : '없음') : '—';
+    var bldCls = sarDb != null ? (sarDb >= -3 ? 'tl-bad' : sarDb >= -4 ? 'tl-mid' : 'tl-good') : '';
+    rows += '<tr><td>' + y + '</td>'
+      + '<td class="' + farmCls + '">' + farm + ' (' + ndvi.toFixed(2) + ')</td>'
+      + '<td class="' + moistCls + '">' + moist + (ndmi != null ? ' (' + ndmi.toFixed(2) + ')' : '') + '</td>'
+      + '<td class="' + soilCls + '">' + soil + (bsi != null ? ' (' + bsi.toFixed(2) + ')' : '') + '</td>'
+      + '<td class="' + bldCls + '">' + bld + (sarDb != null ? ' (' + sarDb + 'dB)' : '') + '</td></tr>';
+  }
+  el.innerHTML = '<h3 class="tl-title">연도별 종합 판정</h3>'
+    + '<div class="tl-scroll"><table class="tl-table"><thead><tr><th>연도</th><th>경작(NDVI)</th><th>수분(NDMI)</th><th>나지(BSI)</th><th>건물(SAR)</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody></table></div>'
+    + '<p class="tl-legend">경작: 여름 최고 NDVI ≥0.4 경작, ≥0.2 약한 식생, &lt;0.2 맨땅 · 수분: NDMI ≥0.3 습윤, ≥0.1 보통, &lt;0.1 건조 · 나지: BSI ≥0.1 나지, ≥-0.05 혼합, &lt;-0.05 식생 · 건물: SAR VV ≥-3dB 있음, ≥-4dB 불확실, &lt;-4dB 없음</p>';
 }
 
 function sarClass(db) {
@@ -382,6 +416,8 @@ async function runLookup() {
     var feat = JSON.stringify({ type: 'Feature', properties: {}, geometry: geom });
     var ndviByYear = {};
     var springByYear = {};
+    var ndmiByYear = {};
+    var bsiByYear = {};
     var seasonsDone = 0, searchFail = 0, ok = 0, fail = 0;
 
     var progWrap = document.getElementById('luProgWrap'), prog = document.getElementById('luProg');
@@ -423,14 +459,35 @@ async function runLookup() {
         var baseline = it.properties['s2:processing_baseline'] || '00.00';
         var expr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
         try {
-          var sj = await fetchJson(PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id +
-            '&expression=' + encodeURIComponent(expr) + '&asset_as_band=true',
-            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: feat }, 0);
+          var statUrl = PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id;
+          var statOpts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: feat };
+          var ndviP = fetchJson(statUrl + '&expression=' + encodeURIComponent(expr) + '&asset_as_band=true', statOpts, 0);
+          var extraP = [];
+          if (s.kind === 'summer') {
+            var ndmiExpr = baseline >= '04.00' ? '(B08-B11)/(B08+B11-2000)' : '(B08-B11)/(B08+B11)';
+            var bsiExpr = baseline >= '04.00' ? '(B11+B04-B08-B02)/(B11+B04+B08+B02-4000)' : '(B11+B04-B08-B02)/(B11+B04+B08+B02)';
+            extraP.push(fetchJson(statUrl + '&expression=' + encodeURIComponent(ndmiExpr) + '&asset_as_band=true', statOpts, 0).catch(function() { return null; }));
+            extraP.push(fetchJson(statUrl + '&expression=' + encodeURIComponent(bsiExpr) + '&asset_as_band=true', statOpts, 0).catch(function() { return null; }));
+          }
+          var results = await Promise.all([ndviP].concat(extraP));
+          var sj = results[0];
           var sv = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
           if (sv && sv.mean != null && isFinite(sv.mean)) {
             var v = sv.mean;
             if (s.kind === 'summer') {
               if (ndviByYear[s.year] == null || v > ndviByYear[s.year]) ndviByYear[s.year] = v;
+              if (results[1]) {
+                var ns = results[1].properties && results[1].properties.statistics ? Object.values(results[1].properties.statistics)[0] : null;
+                if (ns && ns.mean != null && isFinite(ns.mean)) {
+                  if (ndmiByYear[s.year] == null || ns.mean > ndmiByYear[s.year]) ndmiByYear[s.year] = ns.mean;
+                }
+              }
+              if (results[2]) {
+                var bs = results[2].properties && results[2].properties.statistics ? Object.values(results[2].properties.statistics)[0] : null;
+                if (bs && bs.mean != null && isFinite(bs.mean)) {
+                  if (bsiByYear[s.year] == null || bs.mean > bsiByYear[s.year]) bsiByYear[s.year] = bs.mean;
+                }
+              }
             } else {
               if (springByYear[s.year] == null || v < springByYear[s.year]) springByYear[s.year] = v;
             }
@@ -508,6 +565,8 @@ async function runLookup() {
       years: years,
       ndvi_summer: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
       ndvi_spring: years.map(function(y) { return springByYear[y] != null ? Math.round(springByYear[y] * 100) / 100 : null; }),
+      ndmi_summer: years.map(function(y) { return ndmiByYear[y] != null ? Math.round(ndmiByYear[y] * 100) / 100 : null; }),
+      bsi_summer: years.map(function(y) { return bsiByYear[y] != null ? Math.round(bsiByYear[y] * 100) / 100 : null; }),
       scenes: ok,
       sar: sarByYear,
       note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) 최고 NDVI와 봄(3~5월) 최저 NDVI입니다. 계절마다 구름이 가장 적은 장면 ' + NEED + '개 기준.'
