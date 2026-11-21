@@ -50,14 +50,14 @@ PAGES = {
       [intro('ABOUT', '회사 소개',
              'DS플래닛은 위성 데이터로 토지의 과거를 읽는 부동산 분석 서비스입니다. 동산건설주식회사의 위성 분석 사업 법인입니다.'),
        'faq', 'contact']),
- 'road': ('도로 편입 토지 — DS플래닛',
+ 'road': ('도로 점용 진단 — DS플래닛',
       [intro('ROAD', '내 땅이 도로가 됐는데, 세금은 그대로?',
-             '보상 없이 도로에 편입된 토지는 재산세 비과세 대상입니다. 위성으로 도로 편입 시점을 특정하고, 세무사를 연결합니다.'),
-       'road', 'cta']),
+             '보상 없이 도로에 편입된 토지는 재산세 비과세 대상입니다. 위성으로 도로화 시점을 특정하고, 세무사를 연결합니다.'),
+       'road', 'road-lookup', 'cta']),
  'construction': ('건설현장 모니터링 — DS플래닛',
       [intro('CONSTRUCTION MONITORING', '건설 현장을 위성으로 감시합니다',
              '접근 허가 없이, 날씨와 무관하게, 전국·해외 어느 현장이든 정기적으로 공정률을 측정합니다. PF 대출 관리, 시공 검증, 경쟁사 벤치마킹까지.'),
-       'construction', 'cta']),
+       'construction', 'const-lookup', 'cta']),
 }
 
 head, nav, footer = part('head'), part('nav'), part('footer')
@@ -68,7 +68,7 @@ js_ver = ver('site.js')
 for slug, (title, blocks) in PAGES.items():
     path = f'/{slug}/' if slug else '/'
     body = ''.join(b if b.lstrip().startswith('<') else part(b) for b in blocks)
-    libs = LOOKUP_LIBS if slug == 'lookup' else ''
+    libs = LOOKUP_LIBS if slug in ('lookup', 'road', 'construction') else ''
     html = (head.replace('{TITLE}', title).replace('{PATH}', path)
             + '</head>\n<body>\n' + nav + body + footer
             + libs

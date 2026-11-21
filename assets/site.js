@@ -361,6 +361,26 @@ async function luFindAddr() {
   if (a) a.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); luQuick(); } });
 })();
 
+/* ── 공통 STAC 유틸리티 ── */
+async function stacFetchJson(url, opts, retries) {
+  var TIMEOUT_MS = 16000;
+  for (var attempt = 0; attempt <= retries; attempt++) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, TIMEOUT_MS);
+    try {
+      var r = await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+      clearTimeout(timer);
+      if (r.ok) return await r.json();
+      if (r.status < 500 && r.status !== 429) throw new Error('HTTP ' + r.status);
+    } catch (err) {
+      clearTimeout(timer);
+      if (attempt === retries) throw err;
+    }
+    if (attempt < retries) await new Promise(function(res) { setTimeout(res, 1500); });
+  }
+  throw new Error('응답 없음');
+}
+
 /* ── Planetary Computer STAC 조회 엔진 ── */
 async function runLookup() {
   var lat = parseFloat(document.getElementById('luLat').value);
@@ -393,23 +413,7 @@ async function runLookup() {
       if (new Date(sp.from) <= now) seasons.push(sp);
     }
 
-    async function fetchJson(url, opts, retries) {
-      for (var attempt = 0; attempt <= retries; attempt++) {
-        var ctrl = new AbortController();
-        var timer = setTimeout(function() { ctrl.abort(); }, TIMEOUT_MS);
-        try {
-          var r = await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
-          clearTimeout(timer);
-          if (r.ok) return await r.json();
-          if (r.status < 500 && r.status !== 429) throw new Error('HTTP ' + r.status);
-        } catch (err) {
-          clearTimeout(timer);
-          if (attempt === retries) throw err;
-        }
-        if (attempt < retries) await new Promise(function(res) { setTimeout(res, 1500); });
-      }
-      throw new Error('응답 없음');
-    }
+    var fetchJson = stacFetchJson;
 
     var d = 0.0015;
     var geom = { type: 'Polygon', coordinates: [[[lon-d,lat-d],[lon+d,lat-d],[lon+d,lat+d],[lon-d,lat+d],[lon-d,lat-d]]] };
@@ -641,6 +645,792 @@ function heroQuick(e) {
     if (innerWidth >= 1024 && !window.LU_FROM_URL && !LU_BUSY && wrap && !wrap.classList.contains('active') && typeof runDemo === 'function') {
       if (typeof luInitMap === 'function') luInitMap();
       runDemo();
+    }
+  }, { threshold: 0.25 });
+  ob.observe(sec);
+})();
+
+/* ================================================================
+   도로 점용 간편 조회 (/road/)
+   BSI(포장) + NDVI(식생 소실) + SAR VV(아스팔트 확인)
+   ================================================================ */
+
+var ROAD_DEMO = {
+  label: '샘플 — 도로 편입 토지 (가상 시나리오)',
+  lat: 37.5600, lon: 126.8470,
+  years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  ndvi:  [0.52, 0.48, 0.45, 0.18, 0.06, 0.05, 0.04, 0.05, 0.04, 0.05],
+  bsi:   [-0.08, -0.05, -0.02, 0.12, 0.22, 0.24, 0.25, 0.23, 0.24, 0.25],
+  sar:   [-7.2, -8.1, -7.5, -11.3, -14.5, -15.1, -14.8, -15.2, -14.9, -15.0],
+  scenes: 42,
+  note: '2019년까지 식생이 있던 토지(NDVI 0.45~0.52)가 2020년을 기점으로 도로로 전환. BSI 급상승 + NDVI 급락 + SAR VV -14dB대로 안정화 → 아스팔트 포장 확인.'
+};
+
+var rdChart = null;
+function renderRoadChart(data) {
+  if (typeof Chart === 'undefined') return;
+  var wrap = document.getElementById('rdChartWrap');
+  if (!wrap) return;
+  wrap.classList.add('active');
+  document.getElementById('rdChartTitle').textContent = data.label + ' — 도로화 진단';
+  if (rdChart) rdChart.destroy();
+  var ctx = document.getElementById('rdChart').getContext('2d');
+  rdChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.years.map(String),
+      datasets: [
+        {
+          label: 'BSI (나지/포장)',
+          data: data.bsi,
+          backgroundColor: data.bsi.map(function(v) {
+            return v >= 0.15 ? 'rgba(229,115,115,0.8)' : v >= 0 ? 'rgba(255,213,79,0.8)' : 'rgba(102,187,106,0.8)';
+          }),
+          borderColor: data.bsi.map(function(v) {
+            return v >= 0.15 ? '#C62828' : v >= 0 ? '#F9A825' : '#388E3C';
+          }),
+          borderWidth: 1, borderRadius: 4, order: 1
+        },
+        {
+          label: 'NDVI (식생)',
+          data: data.ndvi,
+          type: 'line',
+          borderColor: '#66BB6A',
+          backgroundColor: 'rgba(102,187,106,0.1)',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#66BB6A',
+          tension: 0.3, fill: true, order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94A3B8', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(ctx) {
+              if (ctx.datasetIndex === 0) {
+                var v = ctx.raw;
+                if (v >= 0.15) return '판정: 포장/나지';
+                if (v >= 0) return '판정: 전환기';
+                return '판정: 식생 (도로 아님)';
+              }
+              var n = ctx.raw;
+              if (n < 0.15) return '판정: 식생 없음 (도로 가능)';
+              if (n < 0.3) return '판정: 약한 식생';
+              return '판정: 식생 활발 (도로 아님)';
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: -0.3, max: 0.8,
+          title: { display: true, text: 'BSI / NDVI', color: '#94A3B8' },
+          ticks: { color: '#64748B' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        x: { ticks: { color: '#94A3B8' }, grid: { display: false } }
+      }
+    }
+  });
+  document.getElementById('rdMeta').innerHTML =
+    '위치: ' + data.lat.toFixed(4) + ', ' + data.lon.toFixed(4) +
+    ' | 분석 장면: ' + data.scenes + '개 | 데이터: Copernicus Sentinel-2 + Sentinel-1' +
+    (data.note ? '<br>' + data.note : '');
+  renderRoadSar(data);
+  renderRoadTimeline(data);
+}
+
+function rdSarClass(db) {
+  if (db == null) return ['sar-none', '자료 없음'];
+  if (db <= -13) return ['sar-bldg', '포장 추정'];
+  if (db <= -10) return ['sar-unsure', '불확실'];
+  return ['sar-none', '비포장'];
+}
+function renderRoadSar(data) {
+  var box = document.getElementById('rdSar');
+  if (!box || !data.sar) { if (box) box.innerHTML = ''; return; }
+  var cells = '';
+  for (var i = 0; i < data.years.length; i++) {
+    var y = data.years[i], db = data.sar[i];
+    var c = rdSarClass(db);
+    var style = db != null ? (db <= -13 ? 'background:#1565C0;color:#fff;' : db <= -10 ? 'background:#F9A825;color:#333;' : 'background:#388E3C;color:#fff;') : '';
+    cells += '<div class="lookup-sar-cell" style="' + style + '"><b>' + y + '</b>' + c[1] + (db != null ? '<br><small>' + db + 'dB</small>' : '') + '</div>';
+  }
+  box.innerHTML = '<div class="lookup-sar-title">레이더로 본 아스팔트 포장 여부 (겨울 1~3월)</div>' +
+    '<div class="lookup-sar-row">' + cells + '</div>' +
+    '<div class="lookup-sar-note">아스팔트는 레이더 신호를 거울처럼 반사하여 VV값이 매우 낮고(-13dB 이하) 계절에 무관하게 안정적입니다. ' +
+    '흙·풀밭은 계절마다 출렁이고, 건물은 강하게 반사(-3dB 이상)됩니다.</div>';
+}
+
+function renderRoadTimeline(data) {
+  var el = document.getElementById('rdTimeline');
+  if (!el) return;
+  el.hidden = false;
+  var rows = '';
+  for (var i = 0; i < data.years.length; i++) {
+    var y = data.years[i];
+    var ndvi = data.ndvi[i], bsi = data.bsi[i], sarDb = data.sar ? data.sar[i] : null;
+    var vegCls = ndvi < 0.15 ? 'tl-bad' : ndvi < 0.3 ? 'tl-mid' : 'tl-good';
+    var vegTxt = ndvi < 0.15 ? '없음' : ndvi < 0.3 ? '약함' : '활발';
+    var pavCls = bsi >= 0.15 ? 'tl-bad' : bsi >= 0 ? 'tl-mid' : 'tl-good';
+    var pavTxt = bsi >= 0.15 ? '포장/나지' : bsi >= 0 ? '전환' : '식생';
+    var sarCls = sarDb != null ? (sarDb <= -13 ? 'tl-bad' : sarDb <= -10 ? 'tl-mid' : 'tl-good') : '';
+    var sarTxt = sarDb != null ? (sarDb <= -13 ? '포장' : sarDb <= -10 ? '불확실' : '비포장') : '—';
+    var road = (ndvi < 0.15 && bsi >= 0.15) ? '도로' : (ndvi < 0.3 && bsi >= 0) ? '전환기' : '토지';
+    var roadCls = road === '도로' ? 'tl-bad' : road === '전환기' ? 'tl-mid' : 'tl-good';
+    rows += '<tr><td>' + y + '</td>'
+      + '<td class="' + vegCls + '">' + vegTxt + ' (' + ndvi.toFixed(2) + ')</td>'
+      + '<td class="' + pavCls + '">' + pavTxt + ' (' + bsi.toFixed(2) + ')</td>'
+      + '<td class="' + sarCls + '">' + sarTxt + (sarDb != null ? ' (' + sarDb + 'dB)' : '') + '</td>'
+      + '<td class="' + roadCls + '"><strong>' + road + '</strong></td></tr>';
+  }
+  el.innerHTML = '<h3 class="tl-title">연도별 도로화 판정</h3>'
+    + '<div class="tl-scroll"><table class="tl-table"><thead><tr><th>연도</th><th>식생(NDVI)</th><th>포장(BSI)</th><th>아스팔트(SAR)</th><th>종합</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody></table></div>'
+    + '<p class="tl-legend">식생: NDVI &lt;0.15 없음, &lt;0.3 약함, ≥0.3 활발 · 포장: BSI ≥0.15 포장/나지, ≥0 전환, &lt;0 식생 · 아스팔트: SAR VV ≤-13dB 포장, ≤-10dB 불확실, &gt;-10dB 비포장</p>';
+}
+
+function runRoadDemo() {
+  if (typeof Chart === 'undefined' || !document.getElementById('rdChart')) return;
+  var ob0 = document.getElementById('rdOrder'); if (ob0) ob0.hidden = true;
+  document.getElementById('rdLat').value = ROAD_DEMO.lat;
+  document.getElementById('rdLon').value = ROAD_DEMO.lon;
+  document.getElementById('rdStatus').textContent = '샘플을 표시합니다 (가상 시나리오: 2020년 도로 편입)';
+  rdSetPoint(ROAD_DEMO.lat, ROAD_DEMO.lon, 15);
+  renderRoadChart(ROAD_DEMO);
+}
+
+/* ── 도로 조회 지도 (rd 접두) ── */
+var rdMap = null, rdMarker = null, rdBox = null;
+function rdInitMap() {
+  if (rdMap || typeof L === 'undefined' || !document.getElementById('rdMap')) return;
+  rdMap = L.map('rdMap', { scrollWheelZoom: false, tap: true, dragging: !L.Browser.mobile }).setView([36.3, 127.8], 7);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, attribution: 'Tiles &copy; Esri'
+  }).addTo(rdMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, opacity: 0.8
+  }).addTo(rdMap);
+  rdMap.on('click', function(e) {
+    rdSetPoint(e.latlng.lat, e.latlng.lng); window.RD_LABEL = null;
+    document.getElementById('rdStatus').textContent = '도로 위치를 선택했습니다. "조회 시작"을 누르세요.';
+    document.getElementById('rdStatus').style.color = '#94A3B8';
+  });
+  rdMap.on('focus', function() { rdMap.scrollWheelZoom.enable(); });
+  rdMap.on('blur', function() { rdMap.scrollWheelZoom.disable(); });
+  ['rdLat', 'rdLon'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      var la = parseFloat(document.getElementById('rdLat').value);
+      var lo = parseFloat(document.getElementById('rdLon').value);
+      if (!isNaN(la) && !isNaN(lo)) rdSetPoint(la, lo, Math.max(rdMap.getZoom(), 15));
+    });
+  });
+}
+function rdSetPoint(lat, lon, zoom) {
+  document.getElementById('rdLat').value = lat.toFixed(5);
+  document.getElementById('rdLon').value = lon.toFixed(5);
+  if (!rdMap) return;
+  var d = 0.0015;
+  var bounds = [[lat - d, lon - d], [lat + d, lon + d]];
+  if (rdMarker) rdMarker.setLatLng([lat, lon]); else rdMarker = L.circleMarker([lat, lon], { radius: 5, color: '#FFFFFF', weight: 2, fillColor: '#FF7043', fillOpacity: 1 }).addTo(rdMap);
+  if (rdBox) rdBox.setBounds(bounds); else rdBox = L.rectangle(bounds, { color: '#FFD54F', weight: 3, fill: true, fillOpacity: 0.08, dashArray: '6,4' }).addTo(rdMap);
+  if (zoom) rdMap.setView([lat, lon], zoom);
+}
+if (document.getElementById('rdMap')) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rdInitMap); else rdInitMap();
+}
+
+/* ── 도로 지번 검색 (luGeocode 재사용) ── */
+async function rdFindAddr() {
+  var input = document.getElementById('rdAddr');
+  var btn = document.getElementById('rdAddrBtn');
+  var status = document.getElementById('rdStatus');
+  if (!input || !btn || !status) return false;
+  var addr = input.value.trim();
+  if (addr.length < 4) { status.textContent = '지번을 입력하세요'; status.style.color = '#EF4444'; return false; }
+  btn.disabled = true; btn.textContent = '찾는 중...';
+  status.style.color = '#94A3B8'; status.textContent = '지번 위치를 찾는 중...';
+  try {
+    var res = null;
+    var types = ['parcel', 'road'];
+    for (var i = 0; i < types.length; i++) {
+      var d = await luGeocode(addr, types[i]);
+      if (d && d.response && d.response.status === 'OK') { res = d.response; break; }
+    }
+    if (!res) { status.textContent = '해당 지번을 찾지 못했습니다. 지도에서 도로를 직접 클릭해 주세요.'; status.style.color = '#EF4444'; return false; }
+    var lat = parseFloat(res.result.point.y), lon = parseFloat(res.result.point.x);
+    rdSetPoint(lat, lon, 16);
+    var label = res.refined && res.refined.text ? res.refined.text : addr;
+    status.textContent = '찾았습니다: ' + label + ' — 도로 위에 사각형이 오도록 클릭해 맞춰 주세요.';
+    status.style.color = '#3CB371';
+    window.RD_LABEL = label;
+    return true;
+  } catch (e) {
+    status.textContent = '지번 검색 서버가 응답하지 않습니다.'; status.style.color = '#EF4444'; return false;
+  } finally { btn.disabled = false; btn.textContent = '바로 조회'; }
+}
+(function() {
+  var a = document.getElementById('rdAddr');
+  if (a) a.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); rdQuick(); } });
+})();
+
+/* ── 도로 STAC 조회 엔진 (BSI 중심 + SAR mean) ── */
+async function runRoadLookup() {
+  var lat = parseFloat(document.getElementById('rdLat').value);
+  var lon = parseFloat(document.getElementById('rdLon').value);
+  var status = document.getElementById('rdStatus');
+  var btn = document.getElementById('rdBtn');
+  if (!status || !btn) return;
+  if (isNaN(lat) || isNaN(lon) || lat < 33 || lat > 43 || lon < 124 || lon > 132) {
+    status.textContent = isNaN(lat) || isNaN(lon) ? '먼저 지번을 찾거나 지도에서 도로를 클릭하세요.' : '국내 위치만 조회할 수 있습니다.';
+    status.style.color = '#EF4444'; return;
+  }
+  btn.disabled = true; btn.textContent = '조회 중...';
+  status.style.color = '#94A3B8'; status.textContent = 'Planetary Computer에서 위성 영상을 검색 중...';
+  try {
+    var FIRST_YEAR = 2017, thisYear = new Date().getFullYear(), CANDIDATES = 5, NEED = 2, CONCURRENCY = 8;
+    var now = new Date();
+    var seasons = [];
+    for (var yy = thisYear; yy >= FIRST_YEAR; yy--) {
+      var su = { year: yy, from: yy + '-07-01T00:00:00Z', to: yy + '-09-30T23:59:59Z' };
+      if (new Date(su.from) <= now) seasons.push(su);
+    }
+    var d = 0.0015;
+    var feat = JSON.stringify({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[lon-d,lat-d],[lon+d,lat-d],[lon+d,lat+d],[lon-d,lat+d],[lon-d,lat-d]]] } });
+    var ndviByYear = {}, bsiByYear = {};
+    var seasonsDone = 0, ok = 0, fail = 0, searchFail = 0;
+    var progWrap = document.getElementById('rdProgWrap'), prog = document.getElementById('rdProg');
+    if (progWrap) progWrap.hidden = false;
+    function showProgress() {
+      var tot = seasons.length + sarYears.length;
+      var done = seasonsDone + sarDone;
+      var pct = tot ? Math.min(100, Math.round(done / tot * 100)) : 0;
+      if (prog) prog.style.width = Math.max(4, pct) + '%';
+      status.textContent = '위성 영상 분석 중... ' + pct + '% (NDVI·BSI·SAR)' + (fail ? ' · 건너뜀 ' + fail + '건' : '');
+    }
+    async function doSeason(s) {
+      var items = [];
+      try {
+        var res = await stacFetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collections: ['sentinel-2-l2a'], intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: s.from + '/' + s.to, query: { 'eo:cloud_cover': { lt: 30 } },
+            sortby: [{ field: 'eo:cloud_cover', direction: 'asc' }], limit: CANDIDATES,
+            fields: { include: ['properties.datetime', 'properties.s2:processing_baseline', 'id'] } })
+        }, 1);
+        items = res.features || [];
+      } catch (e) { searchFail++; }
+      var got = 0, seenDates = {};
+      for (var i = 0; i < items.length && got < NEED; i++) {
+        var it = items[i];
+        var day = it.properties.datetime.slice(0, 10);
+        if (seenDates[day]) continue; seenDates[day] = true;
+        var baseline = it.properties['s2:processing_baseline'] || '00.00';
+        var ndviExpr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
+        var bsiExpr = baseline >= '04.00' ? '(B11+B04-B08-B02)/(B11+B04+B08+B02-4000)' : '(B11+B04-B08-B02)/(B11+B04+B08+B02)';
+        try {
+          var statUrl = PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id;
+          var statOpts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: feat };
+          var results = await Promise.all([
+            stacFetchJson(statUrl + '&expression=' + encodeURIComponent(ndviExpr) + '&asset_as_band=true', statOpts, 0),
+            stacFetchJson(statUrl + '&expression=' + encodeURIComponent(bsiExpr) + '&asset_as_band=true', statOpts, 0).catch(function() { return null; })
+          ]);
+          var sv = results[0] && results[0].properties && results[0].properties.statistics ? Object.values(results[0].properties.statistics)[0] : null;
+          if (sv && sv.mean != null && isFinite(sv.mean)) {
+            if (ndviByYear[s.year] == null || sv.mean > ndviByYear[s.year]) ndviByYear[s.year] = sv.mean;
+            if (results[1]) {
+              var bs = results[1].properties && results[1].properties.statistics ? Object.values(results[1].properties.statistics)[0] : null;
+              if (bs && bs.mean != null && isFinite(bs.mean)) {
+                if (bsiByYear[s.year] == null || bs.mean > bsiByYear[s.year]) bsiByYear[s.year] = bs.mean;
+              }
+            }
+            got++; ok++;
+          } else { fail++; }
+        } catch (e) { fail++; }
+      }
+      seasonsDone++; showProgress();
+    }
+    /* SAR — 도로용: mean 사용 (아스팔트는 균일하게 낮은 값) */
+    var sarByYear = {};
+    var sh = 0.0003, shl = sh / Math.cos(lat * Math.PI / 180);
+    var sarFeat = JSON.stringify({ type: 'Feature', properties: {}, geometry: { type: 'Polygon',
+      coordinates: [[[lon-shl,lat-sh],[lon+shl,lat-sh],[lon+shl,lat+sh],[lon-shl,lat+sh],[lon-shl,lat-sh]]] } });
+    var sarYears = [];
+    for (var sy = FIRST_YEAR; sy <= thisYear; sy++) if (new Date(sy + '-01-15T00:00:00Z') <= now) sarYears.push(sy);
+    var sarDone = 0;
+    async function doSarYear(y) {
+      try {
+        var res = await stacFetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collections: ['sentinel-1-rtc'], intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: y + '-01-01T00:00:00Z/' + y + '-03-31T23:59:59Z', limit: 40,
+            fields: { include: ['id', 'properties.datetime', 'properties.sat:orbit_state', 'properties.sat:relative_orbit'] } })
+        }, 1);
+        var its = res.features || [];
+        var cnt = {};
+        its.forEach(function(f) { var k = f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit']; cnt[k] = (cnt[k] || 0) + 1; });
+        var best = Object.keys(cnt).sort(function(a, b) { return cnt[b] - cnt[a]; })[0];
+        its = its.filter(function(f) { return f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit'] === best; }).slice(0, 4);
+        var vals = [];
+        for (var i = 0; i < its.length; i++) {
+          try {
+            var sj = await stacFetchJson(PC_API + '/api/data/v1/item/statistics?collection=sentinel-1-rtc&item=' + its[i].id + '&assets=vv',
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: sarFeat }, 0);
+            var st = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
+            if (st && st.mean > 0) vals.push(10 * Math.log10(st.mean));
+          } catch (e) {}
+        }
+        if (vals.length) {
+          vals.sort(function(a, b) { return a - b; });
+          var m = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+          sarByYear[y] = Math.round(m * 10) / 10;
+        } else { sarByYear[y] = null; }
+      } catch (e) { sarByYear[y] = null; }
+      sarDone++; showProgress();
+    }
+    var sarIdx = 0;
+    async function sarRunner() { while (sarIdx < sarYears.length) { await doSarYear(sarYears[sarIdx++]); } }
+    var sarRunners = [];
+    for (var k2 = 0; k2 < Math.min(5, sarYears.length); k2++) sarRunners.push(sarRunner());
+    showProgress();
+    var nextIdx = 0;
+    async function runner() { while (nextIdx < seasons.length) { await doSeason(seasons[nextIdx++]); } }
+    var runners = [];
+    for (var k = 0; k < Math.min(CONCURRENCY, seasons.length); k++) runners.push(runner());
+    await Promise.all(runners.concat(sarRunners));
+    if (searchFail === seasons.length) throw new Error('위성 데이터 서버가 응답하지 않습니다. 잠시 후 다시 시도하세요');
+    var years = Object.keys(ndviByYear).map(Number).sort(function(a, b) { return a - b; });
+    if (years.length < 2) throw new Error('유효한 데이터가 부족합니다 (' + years.length + '년). 좌표를 확인하세요');
+    renderRoadChart({
+      label: window.RD_LABEL || (lat.toFixed(4) + ', ' + lon.toFixed(4)),
+      lat: lat, lon: lon, years: years, scenes: ok,
+      ndvi: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
+      bsi: years.map(function(y) { return bsiByYear[y] != null ? Math.round(bsiByYear[y] * 100) / 100 : 0; }),
+      sar: years.map(function(y) { return sarByYear[y]; }),
+      note: years[0] + '~' + years[years.length - 1] + '년 여름(7~9월) BSI·NDVI + 겨울(1~3월) SAR VV(mean) 분석.'
+    });
+    status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석' + (fail ? ' (건너뜀 ' + fail + '건)' : '');
+    status.style.color = '#3CB371';
+    var ob = document.getElementById('rdOrder'); if (ob) ob.hidden = false;
+    if (innerWidth < 1024) { var cw = document.getElementById('rdChartWrap'); if (cw) cw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  } catch (e) {
+    status.textContent = '조회 실패: ' + e.message; status.style.color = '#EF4444';
+  } finally {
+    var pw = document.getElementById('rdProgWrap'); if (pw) pw.hidden = true;
+    btn.disabled = false; btn.textContent = '조회 시작';
+  }
+}
+
+function rdOrder(e) {
+  if (e) e.preventDefault();
+  window.location.href = '/about/#contact';
+}
+
+var RD_BUSY = false;
+async function rdQuick() {
+  if (RD_BUSY) return; RD_BUSY = true;
+  try { var found = await rdFindAddr(); if (found) await runRoadLookup(); }
+  finally { RD_BUSY = false; }
+}
+
+/* PC에서 도로 조회 섹션 보이면 샘플 먼저 표시 */
+(function() {
+  var sec = document.getElementById('road-lookup'); if (!sec || !('IntersectionObserver' in window)) return;
+  var ob = new IntersectionObserver(function(es) {
+    if (!es[0].isIntersecting) return; ob.disconnect();
+    var wrap = document.getElementById('rdChartWrap');
+    if (innerWidth >= 1024 && wrap && !wrap.classList.contains('active') && typeof runRoadDemo === 'function') {
+      if (typeof rdInitMap === 'function') rdInitMap();
+      runRoadDemo();
+    }
+  }, { threshold: 0.25 });
+  ob.observe(sec);
+})();
+
+/* ================================================================
+   건설 모니터링 간편 조회 (/construction/)
+   NDVI(부지 정리) + BSI(토공) + SAR VV(구조물 출현)
+   ================================================================ */
+
+var CONST_DEMO = {
+  label: '샘플 — 건설현장 (가상 시나리오: 2021년 착공)',
+  lat: 37.3950, lon: 127.1120,
+  years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  ndvi:  [0.72, 0.68, 0.70, 0.65, 0.15, 0.08, 0.06, 0.05, 0.10, 0.18],
+  bsi:   [-0.15, -0.12, -0.14, -0.10, 0.20, 0.28, 0.18, 0.08, 0.02, -0.03],
+  sar:   [-8.5, -7.2, -8.0, -7.8, -6.5, -4.2, -3.1, -2.5, -2.8, -2.6],
+  scenes: 45,
+  note: '2020년까지 녹지(NDVI 0.65~0.72)였던 부지가 2021년 착공. NDVI 급락 + BSI 급상승(토공) → 2022~2023년 SAR -3dB 이하로 상승(건물 골조) → 2024년 이후 구조물 안정화.'
+};
+
+var csChart = null;
+function renderConstChart(data) {
+  if (typeof Chart === 'undefined') return;
+  var wrap = document.getElementById('csChartWrap');
+  if (!wrap) return;
+  wrap.classList.add('active');
+  document.getElementById('csChartTitle').textContent = data.label + ' — 공정 추적';
+  if (csChart) csChart.destroy();
+  var ctx = document.getElementById('csChart').getContext('2d');
+  csChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.years.map(String),
+      datasets: [
+        {
+          label: 'SAR VV (구조물)',
+          data: data.sar,
+          backgroundColor: data.sar.map(function(v) {
+            if (v == null) return 'rgba(128,128,128,0.3)';
+            return v >= -3 ? 'rgba(229,115,115,0.8)' : v >= -6 ? 'rgba(255,213,79,0.8)' : 'rgba(102,187,106,0.8)';
+          }),
+          borderColor: data.sar.map(function(v) {
+            if (v == null) return '#999';
+            return v >= -3 ? '#C62828' : v >= -6 ? '#F9A825' : '#388E3C';
+          }),
+          borderWidth: 1, borderRadius: 4, order: 2
+        },
+        {
+          label: 'NDVI (식생)',
+          data: data.ndvi,
+          type: 'line',
+          borderColor: '#66BB6A', backgroundColor: 'rgba(102,187,106,0.1)',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#66BB6A',
+          tension: 0.3, fill: false, order: 0
+        },
+        {
+          label: 'BSI (토공/나지)',
+          data: data.bsi,
+          type: 'line',
+          borderColor: '#FF7043', backgroundColor: 'rgba(255,112,67,0.1)',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#FF7043',
+          tension: 0.3, fill: false, order: 1, borderDash: [5, 3]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94A3B8', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(ctx) {
+              if (ctx.datasetIndex === 0) {
+                var v = ctx.raw;
+                if (v == null) return '';
+                if (v >= -3) return '판정: 건물급 구조물';
+                if (v >= -6) return '판정: 공사 중 (일부 구조물)';
+                return '판정: 구조물 없음';
+              }
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: -16, max: 2,
+          title: { display: true, text: 'SAR VV (dB) / NDVI·BSI', color: '#94A3B8' },
+          ticks: { color: '#64748B' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        x: { ticks: { color: '#94A3B8' }, grid: { display: false } }
+      }
+    }
+  });
+  document.getElementById('csMeta').innerHTML =
+    '위치: ' + data.lat.toFixed(4) + ', ' + data.lon.toFixed(4) +
+    ' | 분석 장면: ' + data.scenes + '개 | 데이터: Copernicus Sentinel-2 + Sentinel-1' +
+    (data.note ? '<br>' + data.note : '');
+  renderConstTimeline(data);
+}
+
+function renderConstTimeline(data) {
+  var el = document.getElementById('csTimeline');
+  if (!el) return;
+  el.hidden = false;
+  var rows = '';
+  for (var i = 0; i < data.years.length; i++) {
+    var y = data.years[i];
+    var ndvi = data.ndvi[i], bsi = data.bsi[i], sarDb = data.sar ? data.sar[i] : null;
+    var vegCls = ndvi >= 0.4 ? 'tl-good' : ndvi >= 0.15 ? 'tl-mid' : 'tl-bad';
+    var vegTxt = ndvi >= 0.4 ? '녹지' : ndvi >= 0.15 ? '일부 식생' : '정리됨';
+    var earthCls = bsi >= 0.15 ? 'tl-bad' : bsi >= 0 ? 'tl-mid' : 'tl-good';
+    var earthTxt = bsi >= 0.15 ? '토공 중' : bsi >= 0 ? '변화 감지' : '안정';
+    var bldCls = sarDb != null ? (sarDb >= -3 ? 'tl-bad' : sarDb >= -6 ? 'tl-mid' : 'tl-good') : '';
+    var bldTxt = sarDb != null ? (sarDb >= -3 ? '건물 감지' : sarDb >= -6 ? '일부 구조물' : '없음') : '—';
+    var phase = '—';
+    if (ndvi < 0.2 && sarDb != null && sarDb >= -3) phase = '구조물 완성';
+    else if (ndvi < 0.2 && bsi >= 0.15) phase = '토공/기초';
+    else if (ndvi < 0.3) phase = '부지 정리';
+    else phase = '착공 전';
+    var phaseCls = phase === '착공 전' ? 'tl-good' : phase === '구조물 완성' ? 'tl-bad' : 'tl-mid';
+    rows += '<tr><td>' + y + '</td>'
+      + '<td class="' + vegCls + '">' + vegTxt + ' (' + ndvi.toFixed(2) + ')</td>'
+      + '<td class="' + earthCls + '">' + earthTxt + ' (' + bsi.toFixed(2) + ')</td>'
+      + '<td class="' + bldCls + '">' + bldTxt + (sarDb != null ? ' (' + sarDb + 'dB)' : '') + '</td>'
+      + '<td class="' + phaseCls + '"><strong>' + phase + '</strong></td></tr>';
+  }
+  el.innerHTML = '<h3 class="tl-title">연도별 공정 추적</h3>'
+    + '<div class="tl-scroll"><table class="tl-table"><thead><tr><th>연도</th><th>녹지(NDVI)</th><th>토공(BSI)</th><th>구조물(SAR)</th><th>공정 단계</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody></table></div>'
+    + '<p class="tl-legend">녹지: NDVI ≥0.4 녹지, ≥0.15 일부, &lt;0.15 정리됨 · 토공: BSI ≥0.15 토공 중, ≥0 변화, &lt;0 안정 · 구조물: SAR VV ≥-3dB 건물, ≥-6dB 일부, &lt;-6dB 없음</p>';
+}
+
+function runConstDemo() {
+  if (typeof Chart === 'undefined' || !document.getElementById('csChart')) return;
+  var ob0 = document.getElementById('csOrder'); if (ob0) ob0.hidden = true;
+  document.getElementById('csLat').value = CONST_DEMO.lat;
+  document.getElementById('csLon').value = CONST_DEMO.lon;
+  document.getElementById('csStatus').textContent = '샘플을 표시합니다 (가상 시나리오: 2021년 착공, 2024년 구조물 완성)';
+  csSetPoint(CONST_DEMO.lat, CONST_DEMO.lon, 15);
+  renderConstChart(CONST_DEMO);
+}
+
+/* ── 건설 조회 지도 (cs 접두) ── */
+var csMap = null, csMarker = null, csBox = null;
+function csInitMap() {
+  if (csMap || typeof L === 'undefined' || !document.getElementById('csMap')) return;
+  csMap = L.map('csMap', { scrollWheelZoom: false, tap: true, dragging: !L.Browser.mobile }).setView([36.3, 127.8], 7);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, attribution: 'Tiles &copy; Esri'
+  }).addTo(csMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, opacity: 0.8
+  }).addTo(csMap);
+  csMap.on('click', function(e) {
+    csSetPoint(e.latlng.lat, e.latlng.lng); window.CS_LABEL = null;
+    document.getElementById('csStatus').textContent = '현장 위치를 선택했습니다. "조회 시작"을 누르세요.';
+    document.getElementById('csStatus').style.color = '#94A3B8';
+  });
+  csMap.on('focus', function() { csMap.scrollWheelZoom.enable(); });
+  csMap.on('blur', function() { csMap.scrollWheelZoom.disable(); });
+  ['csLat', 'csLon'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      var la = parseFloat(document.getElementById('csLat').value);
+      var lo = parseFloat(document.getElementById('csLon').value);
+      if (!isNaN(la) && !isNaN(lo)) csSetPoint(la, lo, Math.max(csMap.getZoom(), 15));
+    });
+  });
+}
+function csSetPoint(lat, lon, zoom) {
+  document.getElementById('csLat').value = lat.toFixed(5);
+  document.getElementById('csLon').value = lon.toFixed(5);
+  if (!csMap) return;
+  var d = 0.0015;
+  var bounds = [[lat - d, lon - d], [lat + d, lon + d]];
+  if (csMarker) csMarker.setLatLng([lat, lon]); else csMarker = L.circleMarker([lat, lon], { radius: 5, color: '#FFFFFF', weight: 2, fillColor: '#AB47BC', fillOpacity: 1 }).addTo(csMap);
+  if (csBox) csBox.setBounds(bounds); else csBox = L.rectangle(bounds, { color: '#FFD54F', weight: 3, fill: true, fillOpacity: 0.08, dashArray: '6,4' }).addTo(csMap);
+  if (zoom) csMap.setView([lat, lon], zoom);
+}
+if (document.getElementById('csMap')) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', csInitMap); else csInitMap();
+}
+
+/* ── 건설 지번 검색 ── */
+async function csFindAddr() {
+  var input = document.getElementById('csAddr');
+  var btn = document.getElementById('csAddrBtn');
+  var status = document.getElementById('csStatus');
+  if (!input || !btn || !status) return false;
+  var addr = input.value.trim();
+  if (addr.length < 4) { status.textContent = '건설현장 주소 또는 지번을 입력하세요'; status.style.color = '#EF4444'; return false; }
+  btn.disabled = true; btn.textContent = '찾는 중...';
+  status.style.color = '#94A3B8'; status.textContent = '위치를 찾는 중...';
+  try {
+    var res = null;
+    var types = ['parcel', 'road'];
+    for (var i = 0; i < types.length; i++) {
+      var d = await luGeocode(addr, types[i]);
+      if (d && d.response && d.response.status === 'OK') { res = d.response; break; }
+    }
+    if (!res) { status.textContent = '해당 주소를 찾지 못했습니다. 지도에서 현장을 직접 클릭해 주세요.'; status.style.color = '#EF4444'; return false; }
+    var lat = parseFloat(res.result.point.y), lon = parseFloat(res.result.point.x);
+    csSetPoint(lat, lon, 16);
+    var label = res.refined && res.refined.text ? res.refined.text : addr;
+    status.textContent = '찾았습니다: ' + label;
+    status.style.color = '#3CB371';
+    window.CS_LABEL = label;
+    return true;
+  } catch (e) {
+    status.textContent = '주소 검색 서버가 응답하지 않습니다.'; status.style.color = '#EF4444'; return false;
+  } finally { btn.disabled = false; btn.textContent = '바로 조회'; }
+}
+(function() {
+  var a = document.getElementById('csAddr');
+  if (a) a.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); csQuick(); } });
+})();
+
+/* ── 건설 STAC 조회 엔진 (NDVI+BSI + SAR max) ── */
+async function runConstLookup() {
+  var lat = parseFloat(document.getElementById('csLat').value);
+  var lon = parseFloat(document.getElementById('csLon').value);
+  var status = document.getElementById('csStatus');
+  var btn = document.getElementById('csBtn');
+  if (!status || !btn) return;
+  if (isNaN(lat) || isNaN(lon) || lat < 33 || lat > 43 || lon < 124 || lon > 132) {
+    status.textContent = isNaN(lat) || isNaN(lon) ? '먼저 주소를 찾거나 지도에서 현장을 클릭하세요.' : '국내 위치만 조회할 수 있습니다.';
+    status.style.color = '#EF4444'; return;
+  }
+  btn.disabled = true; btn.textContent = '조회 중...';
+  status.style.color = '#94A3B8'; status.textContent = 'Planetary Computer에서 위성 영상을 검색 중...';
+  try {
+    var FIRST_YEAR = 2017, thisYear = new Date().getFullYear(), CANDIDATES = 5, NEED = 2, CONCURRENCY = 8;
+    var now = new Date();
+    var seasons = [];
+    for (var yy = thisYear; yy >= FIRST_YEAR; yy--) {
+      var su = { year: yy, from: yy + '-07-01T00:00:00Z', to: yy + '-09-30T23:59:59Z' };
+      if (new Date(su.from) <= now) seasons.push(su);
+    }
+    var d = 0.0015;
+    var feat = JSON.stringify({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[lon-d,lat-d],[lon+d,lat-d],[lon+d,lat+d],[lon-d,lat+d],[lon-d,lat-d]]] } });
+    var ndviByYear = {}, bsiByYear = {};
+    var seasonsDone = 0, ok = 0, fail = 0, searchFail = 0;
+    var progWrap = document.getElementById('csProgWrap'), prog = document.getElementById('csProg');
+    if (progWrap) progWrap.hidden = false;
+    function showProgress() {
+      var tot = seasons.length + sarYears.length;
+      var done = seasonsDone + sarDone;
+      var pct = tot ? Math.min(100, Math.round(done / tot * 100)) : 0;
+      if (prog) prog.style.width = Math.max(4, pct) + '%';
+      status.textContent = '위성 영상 분석 중... ' + pct + '%' + (fail ? ' · 건너뜀 ' + fail + '건' : '');
+    }
+    async function doSeason(s) {
+      var items = [];
+      try {
+        var res = await stacFetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collections: ['sentinel-2-l2a'], intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: s.from + '/' + s.to, query: { 'eo:cloud_cover': { lt: 30 } },
+            sortby: [{ field: 'eo:cloud_cover', direction: 'asc' }], limit: CANDIDATES,
+            fields: { include: ['properties.datetime', 'properties.s2:processing_baseline', 'id'] } })
+        }, 1);
+        items = res.features || [];
+      } catch (e) { searchFail++; }
+      var got = 0, seenDates = {};
+      for (var i = 0; i < items.length && got < NEED; i++) {
+        var it = items[i];
+        var day = it.properties.datetime.slice(0, 10);
+        if (seenDates[day]) continue; seenDates[day] = true;
+        var baseline = it.properties['s2:processing_baseline'] || '00.00';
+        var ndviExpr = baseline >= '04.00' ? '(B08-B04)/(B08+B04-2000)' : '(B08-B04)/(B08+B04)';
+        var bsiExpr = baseline >= '04.00' ? '(B11+B04-B08-B02)/(B11+B04+B08+B02-4000)' : '(B11+B04-B08-B02)/(B11+B04+B08+B02)';
+        try {
+          var statUrl = PC_API + '/api/data/v1/item/statistics?collection=sentinel-2-l2a&item=' + it.id;
+          var statOpts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: feat };
+          var results = await Promise.all([
+            stacFetchJson(statUrl + '&expression=' + encodeURIComponent(ndviExpr) + '&asset_as_band=true', statOpts, 0),
+            stacFetchJson(statUrl + '&expression=' + encodeURIComponent(bsiExpr) + '&asset_as_band=true', statOpts, 0).catch(function() { return null; })
+          ]);
+          var sv = results[0] && results[0].properties && results[0].properties.statistics ? Object.values(results[0].properties.statistics)[0] : null;
+          if (sv && sv.mean != null && isFinite(sv.mean)) {
+            if (ndviByYear[s.year] == null || sv.mean > ndviByYear[s.year]) ndviByYear[s.year] = sv.mean;
+            if (results[1]) {
+              var bs = results[1].properties && results[1].properties.statistics ? Object.values(results[1].properties.statistics)[0] : null;
+              if (bs && bs.mean != null && isFinite(bs.mean)) {
+                if (bsiByYear[s.year] == null || bs.mean > bsiByYear[s.year]) bsiByYear[s.year] = bs.mean;
+              }
+            }
+            got++; ok++;
+          } else { fail++; }
+        } catch (e) { fail++; }
+      }
+      seasonsDone++; showProgress();
+    }
+    /* SAR — 건설용: max 사용 (건물 코너반사 감지) */
+    var sarByYear = {};
+    var sh = 0.0003, shl = sh / Math.cos(lat * Math.PI / 180);
+    var sarFeat = JSON.stringify({ type: 'Feature', properties: {}, geometry: { type: 'Polygon',
+      coordinates: [[[lon-shl,lat-sh],[lon+shl,lat-sh],[lon+shl,lat+sh],[lon-shl,lat+sh],[lon-shl,lat-sh]]] } });
+    var sarYears = [];
+    for (var sy = FIRST_YEAR; sy <= thisYear; sy++) if (new Date(sy + '-01-15T00:00:00Z') <= now) sarYears.push(sy);
+    var sarDone = 0;
+    async function doSarYear(y) {
+      try {
+        var res = await stacFetchJson(PC_API + '/api/stac/v1/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collections: ['sentinel-1-rtc'], intersects: { type: 'Point', coordinates: [lon, lat] },
+            datetime: y + '-01-01T00:00:00Z/' + y + '-03-31T23:59:59Z', limit: 40,
+            fields: { include: ['id', 'properties.datetime', 'properties.sat:orbit_state', 'properties.sat:relative_orbit'] } })
+        }, 1);
+        var its = res.features || [];
+        var cnt = {};
+        its.forEach(function(f) { var k = f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit']; cnt[k] = (cnt[k] || 0) + 1; });
+        var best = Object.keys(cnt).sort(function(a, b) { return cnt[b] - cnt[a]; })[0];
+        its = its.filter(function(f) { return f.properties['sat:orbit_state'] + f.properties['sat:relative_orbit'] === best; }).slice(0, 4);
+        var vals = [];
+        for (var i = 0; i < its.length; i++) {
+          try {
+            var sj = await stacFetchJson(PC_API + '/api/data/v1/item/statistics?collection=sentinel-1-rtc&item=' + its[i].id + '&assets=vv',
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: sarFeat }, 0);
+            var st = sj && sj.properties && sj.properties.statistics ? Object.values(sj.properties.statistics)[0] : null;
+            if (st && st.max > 0) vals.push(10 * Math.log10(st.max));
+          } catch (e) {}
+        }
+        if (vals.length) {
+          vals.sort(function(a, b) { return a - b; });
+          var m = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+          sarByYear[y] = Math.round(m * 10) / 10;
+        } else { sarByYear[y] = null; }
+      } catch (e) { sarByYear[y] = null; }
+      sarDone++; showProgress();
+    }
+    var sarIdx = 0;
+    async function sarRunner() { while (sarIdx < sarYears.length) { await doSarYear(sarYears[sarIdx++]); } }
+    var sarRunners = [];
+    for (var k2 = 0; k2 < Math.min(5, sarYears.length); k2++) sarRunners.push(sarRunner());
+    showProgress();
+    var nextIdx = 0;
+    async function runner() { while (nextIdx < seasons.length) { await doSeason(seasons[nextIdx++]); } }
+    var runners = [];
+    for (var k = 0; k < Math.min(CONCURRENCY, seasons.length); k++) runners.push(runner());
+    await Promise.all(runners.concat(sarRunners));
+    if (searchFail === seasons.length) throw new Error('위성 데이터 서버가 응답하지 않습니다');
+    var years = Object.keys(ndviByYear).map(Number).sort(function(a, b) { return a - b; });
+    if (years.length < 2) throw new Error('유효한 데이터가 부족합니다');
+    renderConstChart({
+      label: window.CS_LABEL || (lat.toFixed(4) + ', ' + lon.toFixed(4)),
+      lat: lat, lon: lon, years: years, scenes: ok,
+      ndvi: years.map(function(y) { return Math.round(ndviByYear[y] * 100) / 100; }),
+      bsi: years.map(function(y) { return bsiByYear[y] != null ? Math.round(bsiByYear[y] * 100) / 100 : 0; }),
+      sar: years.map(function(y) { return sarByYear[y]; }),
+      note: years[0] + '~' + years[years.length - 1] + '년 여름 NDVI·BSI + 겨울 SAR VV(max) 분석.'
+    });
+    status.textContent = '조회 완료: ' + years.length + '년, ' + ok + '개 장면 분석';
+    status.style.color = '#3CB371';
+    var ob = document.getElementById('csOrder'); if (ob) ob.hidden = false;
+    if (innerWidth < 1024) { var cw = document.getElementById('csChartWrap'); if (cw) cw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  } catch (e) {
+    status.textContent = '조회 실패: ' + e.message; status.style.color = '#EF4444';
+  } finally {
+    var pw = document.getElementById('csProgWrap'); if (pw) pw.hidden = true;
+    btn.disabled = false; btn.textContent = '조회 시작';
+  }
+}
+
+function csOrder(e) {
+  if (e) e.preventDefault();
+  window.location.href = '/about/#contact';
+}
+
+var CS_BUSY = false;
+async function csQuick() {
+  if (CS_BUSY) return; CS_BUSY = true;
+  try { var found = await csFindAddr(); if (found) await runConstLookup(); }
+  finally { CS_BUSY = false; }
+}
+
+/* PC에서 건설 조회 섹션 보이면 샘플 먼저 표시 */
+(function() {
+  var sec = document.getElementById('const-lookup'); if (!sec || !('IntersectionObserver' in window)) return;
+  var ob = new IntersectionObserver(function(es) {
+    if (!es[0].isIntersecting) return; ob.disconnect();
+    var wrap = document.getElementById('csChartWrap');
+    if (innerWidth >= 1024 && wrap && !wrap.classList.contains('active') && typeof runConstDemo === 'function') {
+      if (typeof csInitMap === 'function') csInitMap();
+      runConstDemo();
     }
   }, { threshold: 0.25 });
   ob.observe(sec);

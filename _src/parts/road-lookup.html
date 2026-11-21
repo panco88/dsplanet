@@ -1,0 +1,44 @@
+
+<!-- ROAD LOOKUP (도로 점용 간편 조회) -->
+<section class="section lookup" id="road-lookup">
+  <div class="inner">
+    <div class="section-label">Quick Diagnosis</div>
+    <h2 class="section-title">도로 점용 간편 조회</h2>
+    <p class="section-desc">건물 지번을 입력하거나 도로 위를 클릭하면, 10년간 위성 데이터로 도로화 시점을 추정합니다. BSI(포장)·NDVI(식생 소실)·SAR(아스팔트 확인) 세 가지 지표를 함께 봅니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="rdAddr" placeholder="건물 지번 입력 (예: 강서구 화곡동 1000)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="rdAddrBtn" onclick="rdQuick()">바로 조회</button>
+      </div>
+      <div class="lookup-map-hint">건물 옆 도로 위를 지도에서 클릭하세요. 사각형(약 300m) 안의 위성 데이터를 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 도로를 고르세요.</div>
+      <div id="rdMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="rdLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="rdLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">지번은 건물의 대표 좌표입니다. 도로 위에 사각형이 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="rdBtn" onclick="runRoadLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runRoadDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="rdStatus"></div>
+      <div class="lu-progress" id="rdProgWrap" hidden><div id="rdProg"></div></div>
+      </div>
+      <div class="lookup-chart-wrap" id="rdChartWrap">
+        <div class="lookup-chart-title" id="rdChartTitle">도로화 진단 시계열</div>
+        <div class="lookup-chart-canvas"><canvas id="rdChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-brown">포장/나지 (BSI 0.15+)</span>
+          <span class="legend-yellow">전환기 (BSI 0~0.15)</span>
+          <span class="legend-green">식생 (BSI 0 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="rdMeta"></div>
+        <div class="lookup-sar" id="rdSar"></div>
+        <div id="rdTimeline" hidden></div>
+        <a href="/about/#contact" id="rdOrder" class="lu-order" hidden onclick="rdOrder(event)">이 도로 정밀 리포트 의뢰하기 &rarr;<span>항공사진&middot;레이더 교차 판독, A4 PDF &middot; 2~3영업일</span></a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>도로 편입 토지 — DS플래닛</title>
+<title>도로 점용 진단 — DS플래닛</title>
 <meta name="description" content="DS플래닛은 위성 데이터로 농지 경작이력, 토지 이용변화, 건설현장 모니터링을 제공합니다. 매수 전 원격 스크리닝으로 토지의 과거와 현재를 확인하세요.">
 <meta property="og:title" content="DS플래닛 — 위성으로 보는 토지의 진실">
 <meta property="og:description" content="농지 경작이력, 토지 이용변화, 건설현장 모니터링. 위성 데이터 기반 토지 분석 전문 기업.">
@@ -58,7 +58,7 @@
   <div class="inner">
     <div class="section-label" style="color:var(--accent);">ROAD</div>
     <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:800;line-height:1.2;margin:8px 0 12px;">내 땅이 도로가 됐는데, 세금은 그대로?</h1>
-    <p style="max-width:640px;color:#94A3B8;font-size:16px;line-height:1.7;margin:0;">보상 없이 도로에 편입된 토지는 재산세 비과세 대상입니다. 위성으로 도로 편입 시점을 특정하고, 세무사를 연결합니다.</p>
+    <p style="max-width:640px;color:#94A3B8;font-size:16px;line-height:1.7;margin:0;">보상 없이 도로에 편입된 토지는 재산세 비과세 대상입니다. 위성으로 도로화 시점을 특정하고, 세무사를 연결합니다.</p>
   </div>
 </section>
 
@@ -294,6 +294,50 @@
   </div>
 </section>
 
+<!-- ROAD LOOKUP (도로 점용 간편 조회) -->
+<section class="section lookup" id="road-lookup">
+  <div class="inner">
+    <div class="section-label">Quick Diagnosis</div>
+    <h2 class="section-title">도로 점용 간편 조회</h2>
+    <p class="section-desc">건물 지번을 입력하거나 도로 위를 클릭하면, 10년간 위성 데이터로 도로화 시점을 추정합니다. BSI(포장)·NDVI(식생 소실)·SAR(아스팔트 확인) 세 가지 지표를 함께 봅니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="rdAddr" placeholder="건물 지번 입력 (예: 강서구 화곡동 1000)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="rdAddrBtn" onclick="rdQuick()">바로 조회</button>
+      </div>
+      <div class="lookup-map-hint">건물 옆 도로 위를 지도에서 클릭하세요. 사각형(약 300m) 안의 위성 데이터를 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 도로를 고르세요.</div>
+      <div id="rdMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="rdLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="rdLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">지번은 건물의 대표 좌표입니다. 도로 위에 사각형이 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="rdBtn" onclick="runRoadLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runRoadDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="rdStatus"></div>
+      <div class="lu-progress" id="rdProgWrap" hidden><div id="rdProg"></div></div>
+      </div>
+      <div class="lookup-chart-wrap" id="rdChartWrap">
+        <div class="lookup-chart-title" id="rdChartTitle">도로화 진단 시계열</div>
+        <div class="lookup-chart-canvas"><canvas id="rdChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-brown">포장/나지 (BSI 0.15+)</span>
+          <span class="legend-yellow">전환기 (BSI 0~0.15)</span>
+          <span class="legend-green">식생 (BSI 0 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="rdMeta"></div>
+        <div class="lookup-sar" id="rdSar"></div>
+        <div id="rdTimeline" hidden></div>
+        <a href="/about/#contact" id="rdOrder" class="lu-order" hidden onclick="rdOrder(event)">이 도로 정밀 리포트 의뢰하기 &rarr;<span>항공사진&middot;레이더 교차 판독, A4 PDF &middot; 2~3영업일</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="section contact" style="padding-block:56px;">
   <div class="inner" style="text-align:center;">
@@ -339,6 +383,9 @@
     </ul>
   </div>
 </footer>
-<script src="/assets/site.js?v=8266c3ba"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/assets/site.js?v=a66a1e0f"></script>
 </body>
 </html>
