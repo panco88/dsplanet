@@ -62,6 +62,49 @@
   </div>
 </section>
 
+<!-- CONSTRUCTION LOOKUP (건설현장 간편 조회) -->
+<section class="section lookup" id="const-lookup">
+  <div class="inner">
+    <div class="section-label">Quick Monitoring</div>
+    <h2 class="section-title">건설현장 간편 조회</h2>
+    <p class="section-desc">건설현장 주소를 입력하거나 지도에서 현장을 클릭하면, 10년간 위성 데이터로 공정 변화를 추적합니다. NDVI(부지 정리)·BSI(토공)·SAR(구조물 출현) 세 가지 지표를 함께 봅니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="csAddr" placeholder="현장 주소 입력 (예: 세종시 반곡동 100)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="csAddrBtn" onclick="csQuick()">바로 조회</button>
+      </div>
+      <div class="lookup-map-hint">건설현장 중앙을 지도에서 클릭하세요. 사각형(약 300m) 안의 위성 데이터를 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 현장을 고르세요.</div>
+      <div id="csMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="csLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="csLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">현장 중앙에 사각형이 오도록 지도를 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="csBtn" onclick="runConstLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runConstDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="csStatus"></div>
+      <div class="lu-progress" id="csProgWrap" hidden><div id="csProg"></div></div>
+      </div>
+      <div class="lookup-chart-wrap" id="csChartWrap">
+        <div class="lookup-chart-title" id="csChartTitle">건설 공정 추적 시계열</div>
+        <div class="lookup-chart-canvas"><canvas id="csChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-brown">건물 감지 (SAR -3dB+)</span>
+          <span class="legend-yellow">일부 구조물 (-6~-3dB)</span>
+          <span class="legend-green">구조물 없음 (-6dB 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="csMeta"></div>
+        <div id="csTimeline" hidden></div>
+        <a href="/about/#contact" id="csOrder" class="lu-order" hidden onclick="csOrder(event)">이 현장 정밀 모니터링 의뢰하기 &rarr;<span>월간 위성 리포트 &middot; 공정률 정량화 &middot; 히트맵</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CONSTRUCTION MONITORING — 건설현장 위성 모니터링 -->
 
 <!-- 왜 건설현장 모니터링인가 -->
@@ -360,49 +403,6 @@
         <p style="font-size:13px;color:var(--fg-muted);line-height:1.7;">기본은 Sentinel-2 광학(10m, 5일 주기)과 Sentinel-1 SAR(구름 무관)이며, 필요에 따라 Planet Labs(3m, 일 단위)와 Maxar/Airbus(0.5m, 주문형)를 조합합니다.</p>
       </div>
 
-    </div>
-  </div>
-</section>
-
-<!-- CONSTRUCTION LOOKUP (건설현장 간편 조회) -->
-<section class="section lookup" id="const-lookup">
-  <div class="inner">
-    <div class="section-label">Quick Monitoring</div>
-    <h2 class="section-title">건설현장 간편 조회</h2>
-    <p class="section-desc">건설현장 주소를 입력하거나 지도에서 현장을 클릭하면, 10년간 위성 데이터로 공정 변화를 추적합니다. NDVI(부지 정리)·BSI(토공)·SAR(구조물 출현) 세 가지 지표를 함께 봅니다.</p>
-    <div class="lookup-box">
-      <div class="lookup-left">
-      <div class="lookup-search">
-        <input type="text" id="csAddr" placeholder="현장 주소 입력 (예: 세종시 반곡동 100)" autocomplete="off" enterkeyhint="search">
-        <button type="button" id="csAddrBtn" onclick="csQuick()">바로 조회</button>
-      </div>
-      <div class="lookup-map-hint">건설현장 중앙을 지도에서 클릭하세요. 사각형(약 300m) 안의 위성 데이터를 분석합니다.</div>
-      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 현장을 고르세요.</div>
-      <div id="csMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
-      <div class="lookup-inputs">
-        <input type="text" id="csLat" placeholder="위도 (자동 입력)" inputmode="decimal">
-        <input type="text" id="csLon" placeholder="경도 (자동 입력)" inputmode="decimal">
-      </div>
-      <div class="lookup-addr-note">현장 중앙에 사각형이 오도록 지도를 클릭해 맞춰 주세요.</div>
-      <div class="lookup-actions">
-        <button class="btn-lookup" id="csBtn" onclick="runConstLookup()">조회 시작</button>
-        <button class="btn-demo" onclick="runConstDemo()">샘플 보기</button>
-      </div>
-      <div class="lookup-status" id="csStatus"></div>
-      <div class="lu-progress" id="csProgWrap" hidden><div id="csProg"></div></div>
-      </div>
-      <div class="lookup-chart-wrap" id="csChartWrap">
-        <div class="lookup-chart-title" id="csChartTitle">건설 공정 추적 시계열</div>
-        <div class="lookup-chart-canvas"><canvas id="csChart"></canvas></div>
-        <div class="lookup-legend">
-          <span class="legend-brown">건물 감지 (SAR -3dB+)</span>
-          <span class="legend-yellow">일부 구조물 (-6~-3dB)</span>
-          <span class="legend-green">구조물 없음 (-6dB 미만)</span>
-        </div>
-        <div class="lookup-chart-meta" id="csMeta"></div>
-        <div id="csTimeline" hidden></div>
-        <a href="/about/#contact" id="csOrder" class="lu-order" hidden onclick="csOrder(event)">이 현장 정밀 모니터링 의뢰하기 &rarr;<span>월간 위성 리포트 &middot; 공정률 정량화 &middot; 히트맵</span></a>
-      </div>
     </div>
   </div>
 </section>

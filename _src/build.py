@@ -37,7 +37,7 @@ PAGES = {
  'lookup': ('토지 분석 — DS플래닛',
       [intro('LAND ANALYSIS', '위성이 답하는 토지의 질문',
              '현장 방문 없이, 위성이 10년 동안 찍어 둔 기록에서 답을 꺼냅니다. 간편 조회는 무료이고, 정밀 리포트는 전문가가 판독한 보고서로 납품합니다.'),
-       'why', 'service-detail', 'usecases', 'lookup']),
+       'lookup', 'why', 'service-detail', 'usecases']),
  'reports': ('리포트 소개 — DS플래닛',
       [intro('REPORTS', '분석 리포트',
              '위성 관측 데이터와 항공영상을 바탕으로, 대상 필지의 경작이력·건물 유무·토지 변화를 정리한 보고서를 제공합니다.'),
@@ -53,11 +53,11 @@ PAGES = {
  'road': ('도로 점용 진단 — DS플래닛',
       [intro('ROAD', '내 땅이 도로가 됐는데, 세금은 그대로?',
              '보상 없이 도로에 편입된 토지는 재산세 비과세 대상입니다. 위성으로 도로화 시점을 특정하고, 세무사를 연결합니다.'),
-       'road', 'road-lookup', 'cta']),
+       'road-lookup', 'road', 'cta']),
  'construction': ('건설현장 모니터링 — DS플래닛',
       [intro('CONSTRUCTION MONITORING', '건설 현장을 위성으로 감시합니다',
              '접근 허가 없이, 날씨와 무관하게, 전국·해외 어느 현장이든 정기적으로 공정률을 측정합니다. PF 대출 관리, 시공 검증, 경쟁사 벤치마킹까지.'),
-       'construction', 'const-lookup', 'cta']),
+       'const-lookup', 'construction', 'cta']),
 }
 
 head, nav, footer = part('head'), part('nav'), part('footer')
