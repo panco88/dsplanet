@@ -30,8 +30,8 @@ LOOKUP_LIBS = '''<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.
 PAGES = {
  '': ('DS플래닛 — 위성으로 보는 토지의 진실',
       ['hero', 'services', 'faq', 'cta']),
- 'services': ('서비스 소개 — DS플래닛',
-      [intro('SERVICES', '위성이 답하는 토지의 질문',
+ 'services': ('토지 분석 — DS플래닛',
+      [intro('LAND ANALYSIS', '위성이 답하는 토지의 질문',
              '현장 방문 없이, 위성이 10년 동안 찍어 둔 기록에서 답을 꺼냅니다. 간편 조회는 무료이고, 정밀 리포트는 전문가가 판독한 보고서로 납품합니다.'),
        'why', 'service-detail', 'usecases', 'cta']),
  'lookup': ('간편 조회 — DS플래닛',
