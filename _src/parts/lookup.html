@@ -1,0 +1,43 @@
+
+<!-- QUICK LOOKUP (간편 조회) -->
+<section class="section lookup" id="lookup">
+  <div class="inner">
+    <div class="section-label">Quick Lookup</div>
+    <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
+    <p class="section-desc">지번을 입력하거나 지도에서 땅을 클릭하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="luAddrBtn" onclick="luQuick()">바로 조회</button>
+      </div>
+      <div class="lookup-map-hint">지번을 찾거나 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 땅을 고르세요.</div>
+      <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="luLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="luLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">지번 위치는 필지의 대표 좌표라 실제 밭과 조금 어긋날 수 있습니다. 사각형이 땅 위에 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="luStatus"></div>
+      <div class="lu-progress" id="luProgWrap" hidden><div id="luProg"></div></div>
+      </div>
+      <div class="lookup-chart-wrap" id="luChartWrap">
+        <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
+        <div class="lookup-chart-canvas"><canvas id="luChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-green">경작 (NDVI 0.4+)</span>
+          <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
+          <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="luMeta"></div>
+        <div class="lookup-sar" id="luSar"></div>
+        <a href="/about/#contact" id="luOrder" class="lu-order" hidden onclick="luOrder(event)">이 땅 정밀 리포트 의뢰하기 →<span>항공사진·레이더 교차 판독, A4 PDF · 2~3영업일</span></a>
+      </div>
+    </div>
+  </div>
+</section>

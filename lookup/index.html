@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>간편 조회 — DS플래닛</title>
+<meta name="description" content="DS플래닛은 위성 데이터로 농지 경작이력, 토지 이용변화, 건설현장 모니터링을 제공합니다. 매수 전 원격 스크리닝으로 토지의 과거와 현재를 확인하세요.">
+<meta property="og:title" content="DS플래닛 — 위성으로 보는 토지의 진실">
+<meta property="og:description" content="농지 경작이력, 토지 이용변화, 건설현장 모니터링. 위성 데이터 기반 토지 분석 전문 기업.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dssat.co.kr/lookup/">
+<meta property="og:image" content="https://dssat.co.kr/og-image.png">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DS플래닛 — 위성으로 보는 토지의 진실">
+<meta name="twitter:description" content="농지 경작이력, 토지 이용변화, 건설현장 모니터링. 위성 데이터 기반 토지 분석 전문 기업.">
+<meta name="twitter:image" content="https://dssat.co.kr/og-image.png">
+<link rel="canonical" href="https://dssat.co.kr/lookup/">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/site.css?v=efb392f3">
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="inner nav-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="10" ry="4" fill="none" stroke="white" stroke-width="1.2" transform="rotate(-25 12 12)"/><circle cx="12" cy="12" r="2.5" fill="white"/></svg>
+      </span>
+      DS플래닛
+    </a>
+    <ul class="nav-links">
+      <li><a href="/lookup/" class="hide-mobile" data-nav="lookup">간편 조회</a></li>
+      <li><a href="/reports/" class="hide-mobile" data-nav="reports">리포트</a></li>
+      <li><a href="/pricing/" class="hide-mobile" data-nav="pricing">요금</a></li>
+      <li><a href="/about/" class="hide-mobile" data-nav="about">회사 소개</a></li>
+      <li><a href="/about/#contact" class="nav-cta">문의<span class="cta-long">하기</span></a></li>
+      <li class="nav-burger-li"><button type="button" class="nav-burger" aria-label="메뉴" aria-expanded="false" aria-controls="navDrawer" onclick="toggleNavMenu()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button></li>
+    </ul>
+  </div>
+  <div class="nav-drawer" id="navDrawer">
+    <a href="/lookup/" data-nav="lookup">간편 조회 (무료)</a>
+    <a href="/reports/" data-nav="reports">샘플 리포트</a>
+    <a href="/pricing/" data-nav="pricing">요금</a>
+    <a href="/about/" data-nav="about">회사 소개</a>
+    <a href="/about/#contact" class="nav-drawer-cta">문의 · 리포트 의뢰</a>
+  </div>
+</nav>
+
+<!-- PAGE INTRO -->
+<section class="hero" style="padding-block:56px 44px;">
+  <div class="inner">
+    <div class="section-label" style="color:var(--accent);">QUICK LOOKUP</div>
+    <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:800;line-height:1.2;margin:8px 0 12px;">간편 조회</h1>
+    <p style="max-width:640px;color:#94A3B8;font-size:16px;line-height:1.7;margin:0;">지번 하나면 10년치 경작이력을 무료로 조회합니다. Sentinel-2 광학위성과 Sentinel-1 레이더로 식생지수(NDVI)와 건물급 구조물을 함께 분석합니다.</p>
+  </div>
+</section>
+
+<!-- QUICK LOOKUP (간편 조회) -->
+<section class="section lookup" id="lookup">
+  <div class="inner">
+    <div class="section-label">Quick Lookup</div>
+    <h2 class="section-title">간편 조회 — 10년 경작이력</h2>
+    <p class="section-desc">지번을 입력하거나 지도에서 땅을 클릭하면 Sentinel-2 위성 데이터로 10년간의 식생 변화(NDVI)를 바로 조회합니다.</p>
+    <div class="lookup-box">
+      <div class="lookup-left">
+      <div class="lookup-search">
+        <input type="text" id="luAddr" placeholder="지번 입력 (예: 김제시 진봉면 정당리 100)" autocomplete="off" enterkeyhint="search">
+        <button type="button" id="luAddrBtn" onclick="luQuick()">바로 조회</button>
+      </div>
+      <div class="lookup-map-hint">지번을 찾거나 위성지도를 확대해 땅 한가운데를 클릭하세요. 표시된 사각형(약 300m) 안을 평균 내어 분석합니다.</div>
+      <div class="lookup-map-hint touch-only">휴대폰에서는 두 손가락으로 지도를 움직이고, 한 번 눌러 땅을 고르세요.</div>
+      <div id="luMap" class="lookup-map" role="application" aria-label="위치 선택 지도"></div>
+      <div class="lookup-inputs">
+        <input type="text" id="luLat" placeholder="위도 (자동 입력)" inputmode="decimal">
+        <input type="text" id="luLon" placeholder="경도 (자동 입력)" inputmode="decimal">
+      </div>
+      <div class="lookup-addr-note">지번 위치는 필지의 대표 좌표라 실제 밭과 조금 어긋날 수 있습니다. 사각형이 땅 위에 오도록 지도를 한 번 클릭해 맞춰 주세요.</div>
+      <div class="lookup-actions">
+        <button class="btn-lookup" id="luBtn" onclick="runLookup()">조회 시작</button>
+        <button class="btn-demo" onclick="runDemo()">샘플 보기</button>
+      </div>
+      <div class="lookup-status" id="luStatus"></div>
+      <div class="lu-progress" id="luProgWrap" hidden><div id="luProg"></div></div>
+      </div>
+      <div class="lookup-chart-wrap" id="luChartWrap">
+        <div class="lookup-chart-title" id="luChartTitle">NDVI 시계열 (여름 최고값)</div>
+        <div class="lookup-chart-canvas"><canvas id="luChart"></canvas></div>
+        <div class="lookup-legend">
+          <span class="legend-green">경작 (NDVI 0.4+)</span>
+          <span class="legend-yellow">약한 식생 (0.2~0.4)</span>
+          <span class="legend-brown">맨땅/휴경 (0.2 미만)</span>
+        </div>
+        <div class="lookup-chart-meta" id="luMeta"></div>
+        <div class="lookup-sar" id="luSar"></div>
+        <a href="/about/#contact" id="luOrder" class="lu-order" hidden onclick="luOrder(event)">이 땅 정밀 리포트 의뢰하기 →<span>항공사진·레이더 교차 판독, A4 PDF · 2~3영업일</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARENT COMPANY BANNER -->
+<div class="parent-banner">
+  <div class="inner">
+    <span class="pb-label">모기업:</span>
+    <a class="pb-link" href="https://jootek.com/folio/1048596" target="_blank" rel="noopener">
+      동산건설주식회사 — 경기 광주 52개 프로젝트 시공 실적
+      <span class="pb-arrow">↗</span>
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="inner footer-inner">
+    <div>
+      <strong style="color:#CBD5E1;">DS플래닛</strong><br>
+      <span style="font-size:12px; line-height:1.6;">
+        주식회사 동산에셋 | 대표: 김원일 | 사업자등록번호: 830-88-01577<br>
+        경기도 광주시 광주역9로 21(역동)
+      </span>
+    </div>
+    <ul class="footer-links">
+      <li><a href="/lookup/">간편 조회</a></li>
+      <li><a href="/reports/">리포트</a></li>
+      <li><a href="/pricing/">요금</a></li>
+      <li><a href="/about/">회사 소개</a></li>
+      <li><a href="/about/#contact">문의</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/assets/site.js?v=9f8d7366"></script>
+</body>
+</html>

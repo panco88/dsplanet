@@ -1,0 +1,58 @@
+
+<!-- HERO -->
+<section class="hero">
+  <div class="inner">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Sentinel-2 · Sentinel-1 레이더 · 항공영상 분석
+    </div>
+    <h1>위성으로 보는<br><span class="accent-word">토지의 진실</span></h1>
+    <p class="hero-sub">
+      농지 경작이력, 토지 이용변화, 건설현장 진척까지.
+      DS플래닛은 위성 데이터로 땅의 과거와 현재를 읽어, 의사결정에 필요한 객관적 근거를 제공합니다.
+    </p>
+    <form class="hero-quick" onsubmit="heroQuick(event)" role="search" aria-label="내 땅 10년 이력 바로 보기">
+      <label for="heroAddr" class="hero-quick-label">내 땅 10년 이력, 지번만 넣으면 무료로 바로 봅니다</label>
+      <div class="hero-quick-row">
+        <input type="text" id="heroAddr" placeholder="예: 김제시 진봉면 정당리 100" autocomplete="off" enterkeyhint="search">
+        <button type="submit">바로 조회</button>
+      </div>
+      <div class="hero-quick-note">위성 영상 약 40장을 분석합니다 · 1분 안팎 · 회원가입 없음</div>
+    </form>
+    <div class="hero-actions">
+      <a href="/reports/dsplanet-sample-farm-history.pdf" target="_blank" rel="noopener" class="btn btn-primary">샘플 리포트 보기 (PDF)</a>
+      <a href="/lookup/" class="btn btn-outline">지도에서 직접 고르기</a>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-num"><span class="hl">10</span>년</div>
+        <div class="stat-label">위성 시계열 데이터</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span class="hl">10</span>m</div>
+        <div class="stat-label">공간 해상도</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span class="hl">5</span>일</div>
+        <div class="stat-label">재방문 주기</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span class="hl">A4</span></div>
+        <div class="stat-label">리포트 납품</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA SOURCE STRIP -->
+<div class="trust-strip">
+  <div class="inner">
+    <div class="trust-label">활용 데이터 소스</div>
+    <div class="trust-logos">
+      <span>Copernicus Sentinel-2</span>
+      <span>Sentinel-1 SAR</span>
+      <span>Esri World Imagery</span>
+      <span>국토정보플랫폼</span>
+    </div>
+  </div>
+</div>
