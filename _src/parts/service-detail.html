@@ -1,0 +1,115 @@
+
+<!-- SERVICE DETAIL — 고객이 얻는 분석 항목 -->
+<section class="section" style="background:var(--surface-alt);">
+  <div class="inner">
+    <div class="section-label">What you get</div>
+    <h2 class="section-title">리포트에 담기는 분석 항목</h2>
+    <p class="section-desc">하나의 지번으로 아래 분석을 모두 받을 수 있습니다. 간편 조회는 무료이고, 정밀 리포트는 전문가가 판독한 보고서로 납품합니다.</p>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:0;margin-top:32px;">
+
+      <!-- 1. NDVI -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;border-bottom:1px solid var(--border);align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 L7 12 L11 16 L15 8 L21 14"/><path d="M15 4h6v6"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">식생지수(NDVI) 10년 시계열</h3>
+            <span class="service-tag">간편 조회 포함</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            해마다 봄(3~5월)과 여름(7~9월)의 식생지수를 비교합니다. 경작 중인 논밭은 봄에 낮고 여름에 높은 뚜렷한 패턴을 보이며, 휴경·임야화·나지화를 연도별로 판독합니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 양도세 비과세 소명 · 8년 자경농 증명 · 농지전용 검토 · 매수 전 경작 확인</div>
+        </div>
+      </div>
+
+      <!-- 2. SAR 건물 -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;border-bottom:1px solid var(--border);align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10a2 2 0 012-2h12a2 2 0 012 2v10"/><path d="M2 20h20"/><path d="M12 12v4"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">건물급 구조물 감지 (SAR 레이더)</h3>
+            <span class="service-tag">간편 조회 포함</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            Sentinel-1 레이더의 겨울철(1~3월) VV 반사 강도로 건물·공장·창고급 구조물의 존재 여부를 해마다 판정합니다. 구름이나 야간에도 측정되므로 광학영상의 사각을 보완합니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 무허가 건축물 흔적 · 건물 신축/철거 시점 · 농지 위 불법 시설 확인</div>
+        </div>
+      </div>
+
+      <!-- 3. 수분지수 -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;border-bottom:1px solid var(--border);align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 9 4 13 4 16a8 8 0 0016 0c0-3-2.5-7-8-14z"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">수분지수(NDMI) — 침수·습지 이력</h3>
+            <span class="service-tag" style="background:#E3F2FD;color:#1565C0;">정밀 리포트</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            토양과 식생의 수분 함량을 측정합니다. 과거 10년간 물에 잠긴 적이 있는지, 배수가 불량한 땅인지, 관개(물대기) 흔적이 있는지를 확인합니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 침수 이력 확인 · 저습지 판별 · 논 관개 패턴 증빙 · 매수 전 리스크 체크</div>
+        </div>
+      </div>
+
+      <!-- 4. 나지지수 -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;border-bottom:1px solid var(--border);align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 8-8"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">나지지수(BSI) — 성토·절토·토목공사</h3>
+            <span class="service-tag" style="background:#E3F2FD;color:#1565C0;">정밀 리포트</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            식생이 없는 맨땅(나지)의 비율을 측정합니다. 갑자기 나지 비율이 올라간 시점은 성토·절토·벌목 등 형질변경이 일어난 때입니다. NDVI와 결합하면 "논 → 나지 → 건물"로 바뀌는 과정을 연도별로 추적할 수 있습니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 불법 형질변경 시점 특정 · 토목 공사 착공일 증빙 · 복구 여부 확인</div>
+        </div>
+      </div>
+
+      <!-- 5. 토지 피복 변화 타임라인 -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;border-bottom:1px solid var(--border);align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">토지 피복 변화 타임라인</h3>
+            <span class="service-tag" style="background:#E3F2FD;color:#1565C0;">정밀 리포트</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            NDVI + BSI + NDMI + SAR를 종합해, 해마다 그 땅이 어떤 상태였는지를 한 줄로 요약합니다. <strong>"2017 논 → 2020 나지(성토) → 2021 건물 신축 → 현재 건물"</strong>처럼 토지의 이력이 한눈에 보이는 연표입니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 토지 이력 종합 보고서 · 감정평가 보조 자료 · 소송/분쟁 증빙</div>
+        </div>
+      </div>
+
+      <!-- 6. Before/After 위성 영상 -->
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:20px;padding:28px 0;align-items:start;">
+        <div style="width:56px;height:56px;border-radius:12px;background:var(--accent-pale);display:grid;place-items:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="12" y1="2" x2="12" y2="22"/><path d="M7 8l-3 4 3 4"/><path d="M17 8l3 4-3 4"/></svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;">Before/After 위성 비교 영상</h3>
+            <span class="service-tag" style="background:#E3F2FD;color:#1565C0;">정밀 리포트</span>
+          </div>
+          <p style="font-size:14px;color:var(--fg-muted);line-height:1.7;margin-bottom:8px;">
+            과거 시점과 현재의 위성 사진을 나란히 비교합니다. 숫자가 아닌 <strong>눈으로 직접 확인할 수 있는 증거</strong>입니다. 항공영상과 Sentinel-2 RGB를 조합해 가장 선명한 화면을 제공합니다.
+          </p>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">활용: 고객 프레젠테이션 · 민원/소송 첨부 · 현장 사진 대체</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

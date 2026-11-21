@@ -30,6 +30,7 @@
       DS플래닛
     </a>
     <ul class="nav-links">
+      <li><a href="/services/" class="hide-mobile" data-nav="services">서비스</a></li>
       <li><a href="/lookup/" class="hide-mobile" data-nav="lookup">간편 조회</a></li>
       <li><a href="/reports/" class="hide-mobile" data-nav="reports">리포트</a></li>
       <li><a href="/pricing/" class="hide-mobile" data-nav="pricing">요금</a></li>
@@ -39,6 +40,7 @@
     </ul>
   </div>
   <div class="nav-drawer" id="navDrawer">
+    <a href="/services/" data-nav="services">서비스 소개</a>
     <a href="/lookup/" data-nav="lookup">간편 조회 (무료)</a>
     <a href="/reports/" data-nav="reports">샘플 리포트</a>
     <a href="/pricing/" data-nav="pricing">요금</a>
@@ -105,13 +107,13 @@
   </div>
 </div>
 
-<!-- SERVICES -->
+<!-- SERVICES — 홈 첫 화면: 고객이 얻는 것 -->
 <section class="section services" id="services">
   <div class="inner">
-    <div class="section-label">Services</div>
-    <h2 class="section-title">위성 데이터 기반 토지 분석</h2>
+    <div class="section-label">What we solve</div>
+    <h2 class="section-title">이 땅, 사도 되는 땅인가?</h2>
     <p class="section-desc">
-      현장 방문 없이 토지의 경작 여부, 이용 변화, 건설 진척을 객관적으로 확인합니다.
+      현장에 가도 과거는 보이지 않습니다. DS플래닛은 위성이 10년 동안 찍어 둔 기록을 꺼내, 세 가지 질문에 답합니다.
     </p>
     <div class="service-grid">
 
@@ -119,29 +121,32 @@
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M3 20 L7 12 L11 16 L15 8 L21 14"/><path d="M15 4h6v6"/></svg>
         </div>
-        <span class="service-tag">NDVI 시계열</span>
-        <h3>농지 경작이력 리포트</h3>
-        <p>10년치 NDVI 시계열로 필지의 경작/휴경/임야화 이력을 연도별로 판독합니다. 양도세 비과세 소명, 농지전용 검토에 활용되는 객관적 근거 자료입니다.</p>
+        <span class="service-tag">무료 간편 조회</span>
+        <h3>이 땅에서 농사를 지었는가?</h3>
+        <p>10년치 식생지수(NDVI)로 경작·휴경·임야화 이력을 연도별로 판독합니다. 양도세 비과세, 8년 자경농 소명의 객관적 근거.</p>
       </div>
 
       <div class="service-card">
         <div class="service-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 20V10a2 2 0 012-2h12a2 2 0 012 2v10"/><path d="M2 20h20"/><path d="M12 12v4"/></svg>
         </div>
-        <span class="service-tag">Sentinel-2 + SAR</span>
-        <h3>토지 이용변화 추적</h3>
-        <p>광학영상과 레이더를 결합해 벌채, 정지작업, 착공, 준공 단계를 감지합니다. 토지 형질변경 시점을 위성으로 특정합니다.</p>
+        <span class="service-tag">무료 간편 조회</span>
+        <h3>건물이 있었던 흔적은?</h3>
+        <p>레이더(SAR)로 건물급 구조물의 존재 여부를 해마다 판정합니다. 무허가 건축물 흔적, 건물 신축·철거 시점 확인.</p>
       </div>
 
       <div class="service-card">
         <div class="service-icon">
-          <svg viewBox="0 0 24 24"><path d="M4 20V10a2 2 0 012-2h12a2 2 0 012 2v10"/><path d="M2 20h20"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M12 12v4"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.5 9 4 13 4 16a8 8 0 0016 0c0-3-2.5-7-8-14z"/></svg>
         </div>
-        <span class="service-tag">SAR + Before/After</span>
-        <h3>건물 분석 · 건설 모니터링</h3>
-        <p>Sentinel-1 레이더(SAR)로 건물급 구조물 존재 여부를 감지하고, 착공 전후 비교영상과 월별 공정 진척률을 산출합니다. 무허가 건축물 흔적 확인, 원거리 현장의 시공 상황 파악에 활용됩니다.</p>
+        <span class="service-tag">정밀 리포트</span>
+        <h3>물에 잠긴 적은? 땅이 바뀐 적은?</h3>
+        <p>수분지수·나지지수·피복 변화 타임라인까지. 침수 이력, 불법 형질변경, 토목공사 시점을 위성으로 특정합니다.</p>
       </div>
 
+    </div>
+    <div style="text-align:center;margin-top:32px;">
+      <a href="/services/" class="btn btn-primary" style="background:var(--accent);">전체 서비스 보기</a>
     </div>
   </div>
 </section>
@@ -253,6 +258,7 @@
       </span>
     </div>
     <ul class="footer-links">
+      <li><a href="/services/">서비스</a></li>
       <li><a href="/lookup/">간편 조회</a></li>
       <li><a href="/reports/">리포트</a></li>
       <li><a href="/pricing/">요금</a></li>
